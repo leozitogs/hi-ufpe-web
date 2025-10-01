@@ -111,5 +111,3 @@ Durante o desenvolvimento, encontramos um erro persistente onde o modelo `gemini
 O arquivo `gemini_integration.py` já está configurado para usar `models/gemini-1.5-flash` como padrão. Se você encontrar problemas semelhantes com outros modelos, pode ser necessário verificar a disponibilidade do modelo em sua região ou tentar um modelo diferente.
 
 ---
-
-Desenvolvido por Manus AI.
