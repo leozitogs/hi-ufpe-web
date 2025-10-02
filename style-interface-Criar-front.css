@@ -42,7 +42,7 @@ fieldset{
    margin-left: 30%;
    border-radius: 10px;
    border: 2px solid rgb(0, 0, 0);
-   padding-bottom: 5%;
+   padding-bottom: 3%;
 }
 #Terceira_frase{
    color:rgb(0, 4, 7);
@@ -81,7 +81,7 @@ fieldset{
    border-radius: 5px;
    padding: 1% 45%;
    cursor:pointer;
-   margin-bottom: 2%;
+   margin-bottom: 1%;
 
 }
 #nome{
