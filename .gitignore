@@ -1,0 +1,11 @@
+# dependências
+node_modules
+.next
+out
+
+# ambiente
+.env*
+!.env.example
+
+# sistema
+.DS_Store
