@@ -6,3 +6,10 @@ Get -> leitura/apagar
 Post -> enviar/ criar
 PUt/Patch -> edição
 Delete -> deletar
+
+
+
+# uvicorn main:site --reload   // Coloco meu cod em um server local
+
+# endpoint: 
+# /ordens
