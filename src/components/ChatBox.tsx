@@ -130,9 +130,9 @@ export function ChatBox({ currentUser, onBack }: ChatBoxProps) {
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 p-0 flex flex-col">
+          <CardContent className="flex-1 p-0 flex flex-col min-h-0">
             {/* Messages Area */}
-            <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 min-h-0">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -150,11 +150,12 @@ export function ChatBox({ currentUser, onBack }: ChatBoxProps) {
                     )}
                     
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
+                      className={`max-w-[70%] rounded-lg p-3 break-words whitespace-pre-wrap ${
                         message.sender === 'user'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-800'
                       }`}
+                      style={{ wordBreak: 'break-word' }}
                     >
                       <p className="text-sm">{message.content}</p>
                       <p
