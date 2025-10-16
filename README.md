@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hub Inteligente UFPE (Hi UFPE)
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
@@ -44,3 +45,4 @@ O projeto será desenvolvido utilizando uma arquitetura moderna e escalável.
 
 ---
 *Este projeto está em fase inicial de desenvolvimento. Fique à vontade para acompanhar nosso progresso!*
+
