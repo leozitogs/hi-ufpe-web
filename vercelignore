@@ -1,0 +1,11 @@
+server/*
+drizzle/*
+seed-cin-2025-2.ts
+drizzle.config.ts
+vitest.config.ts
+patches/*
+.env
+.env.local
+.env.production
+.env.development
+.env.test
