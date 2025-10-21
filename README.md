@@ -138,8 +138,8 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
 
 2.  **Clonar e Instalar Dependências:**
     ```bash
-    git clone https://github.com/leozitogs/testes-hi-ufpe.git
-    cd testes-hi-ufpe
+    git clone https://github.com/leozitogs/hi-ufpe-web.git
+    cd hi-ufpe-web
     pnpm install
     ```
 
@@ -163,7 +163,7 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
     pnpm db:push
     
     # 2. Popula o banco com dados reais do CIn 2025.2 (Opcional, mas recomendado)
-    pnpm tsx scripts/seed-cin-2025-2.ts
+    pnpm tsx scripts/seed-fixed.ts
     ```
 
 5.  **Iniciar o Servidor de Desenvolvimento:**
