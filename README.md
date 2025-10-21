@@ -1,8 +1,8 @@
 # Hi UFPE - Hub Inteligente 🎓
 
 **Versão:** 1.0.0 (17 de Outubro de 2025)
-**Status:** ✅ Pronto para Apresentação
-**Repositório:** [https://github.com/leozitogs/testes-hi-ufpe](https://github.com/leozitogs/testes-hi-ufpe)
+**Status:** ✅ Pronto para Apresentação (Sprint 2)
+**Repositório:** [github.com/leozitogs/hi-ufpe-web](github.com/leozitogs/hi-ufpe-web)
 
 ## 📋 Sumário Executivo
 
