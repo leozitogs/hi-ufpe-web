@@ -1,5 +1,5 @@
 import { eq, desc, and, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle as drizzleORM, type MySql2DrizzleConfig } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
   disciplinas, professores, horarios, matriculas, 
@@ -11,20 +11,36 @@ import {
   InsertDisciplina, InsertMatricula, InsertMetodoAvaliacao, InsertAvaliacao, InsertRegistroFalta, InsertHorario
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { createPool, type Pool } from "mysql2/promise"; // <-- use o pool PROMISE
+import * as schema from "../drizzle/schema";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: ReturnType<typeof drizzleORM> | null = null;
+let _pool: Pool | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
+  if (_db) return _db;
+
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.warn("[Database] DATABASE_URL not set");
+    return null;
   }
-  return _db;
+
+  try {
+    // Ex.: mysql://user:pass@localhost:3306/hiufpe
+    _pool = createPool(url); // Pool já "promisificado"
+    _db = drizzleORM(
+      _pool as any,
+      { schema, mode: "default" } as MySql2DrizzleConfig<typeof schema>
+    );
+    return _db;
+  } catch (error) {
+    console.warn("[Database] Failed to connect:", error);
+    _db = null;
+    return null;
+  }
 }
+
 
 // ===== USERS =====
 

@@ -111,8 +111,11 @@ export type ResponseFormat =
   | { type: "json_schema"; json_schema: JsonSchema };
 
 const ensureArray = (
-  value: MessageContent | MessageContent[]
-): MessageContent[] => (Array.isArray(value) ? value : [value]);
+  value: MessageContent | MessageContent[] | null | undefined
+): MessageContent[] => {
+  if (value == null) return []; // evita [null]
+  return Array.isArray(value) ? value : [value];
+};
 
 const normalizeContentPart = (
   part: MessageContent
@@ -136,38 +139,54 @@ const normalizeContentPart = (
   throw new Error("Unsupported message content part");
 };
 
+// Substitua toda a função normalizeMessage por esta:
 const normalizeMessage = (message: Message) => {
-  const { role, name, tool_call_id } = message;
+  const { role, name, tool_call_id } = message as any;
+  // 🔴 Preserve tool_calls (se existir) — é essencial para usar mensagens 'tool' depois
+  const tool_calls = (message as any).tool_calls;
 
+  // Content pode ser string | array | null/undefined
+  let contentArr = ensureArray((message as any).content);
+
+  // Mensagens de tool/function: sempre em string (o provider espera isso)
   if (role === "tool" || role === "function") {
-    const content = ensureArray(message.content)
-      .map(part => (typeof part === "string" ? part : JSON.stringify(part)))
+    const content = contentArr
+      .map((part) =>
+        typeof part === "string" ? part : JSON.stringify(part)
+      )
       .join("\n");
 
     return {
       role,
       name,
       tool_call_id,
-      content,
+      content, // string ("" se vazio)
     };
   }
 
-  const contentParts = ensureArray(message.content).map(normalizeContentPart);
+    // Para demais roles (assistant/user/system): normalizar partes
+  const contentParts = contentArr
+    .map(normalizeContentPart)
+    .filter(Boolean) as any[];
 
-  // If there's only text content, collapse to a single string for compatibility
+  // Se não sobrou parte válida, use string vazia (e mantenha tool_calls se houver)
+  if (contentParts.length === 0) {
+    return tool_calls
+      ? { role, name, content: "", tool_calls }
+      : { role, name, content: "" };
+  }
+
+  // Caso seja um único texto, simplifique para string (compat com vários provedores)
   if (contentParts.length === 1 && contentParts[0].type === "text") {
-    return {
-      role,
-      name,
-      content: contentParts[0].text,
-    };
+    return tool_calls
+      ? { role, name, content: contentParts[0].text, tool_calls }
+      : { role, name, content: contentParts[0].text };
   }
 
-  return {
-    role,
-    name,
-    content: contentParts,
-  };
+  // Caso contrário, devolva as partes e (se houver) tool_calls
+  return tool_calls
+    ? { role, name, content: contentParts, tool_calls }
+    : { role, name, content: contentParts };
 };
 
 const normalizeToolChoice = (

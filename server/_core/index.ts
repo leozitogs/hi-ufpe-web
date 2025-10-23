@@ -1,7 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -9,6 +7,12 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function isPortAvailable(port: number ): Promise<boolean> {
   return new Promise(resolve => {
@@ -46,17 +50,24 @@ async function startServer() {
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const publicDir = path.resolve(__dirname, "public"); // Correção: Aponta para a pasta public dentro de dist
+    // Em produção: sirva o build do client se existir (client/dist).
+    // Em dev: não sirva estático (Vite cuida do front).
+    const clientDist = path.resolve(__dirname, "../../client/dist");
+    const hasClientBuild = fs.existsSync(clientDist);
 
-    console.log("Servindo arquivos estáticos de:", publicDir);
+    const SERVE_CLIENT = process.env.SERVE_CLIENT === "true";
 
-    app.use(express.static(publicDir));
-
-    app.get("*", (req, res) => {
-      res.sendFile(path.resolve(publicDir, "index.html"));
-    });
+    if (SERVE_CLIENT || hasClientBuild) {
+      console.log("Servindo client build de:", clientDist);
+      app.use(express.static(clientDist));
+      app.get("*", (_req, res, next) => {
+        const indexFile = path.join(clientDist, "index.html");
+        if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+        return next();
+      });
+    } else {
+      console.log("[Static] Nenhum build do client encontrado. Rode o Vite (client) para o front.");
+    }
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");

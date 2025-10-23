@@ -10,6 +10,7 @@ import * as db from "./db";
 import * as crypto from "crypto";
 import { getChatbotFunctions, ChatbotFunctionEntry } from "./_core/chatbot-functions";
 import { Tool as OpenAITool, Message, Role } from "./_core/llm";
+import { chatRouter } from "./chat.router";
 
 // Procedure para admin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -372,90 +373,116 @@ export const appRouter = router({
         return { id: input.id, mensagens };
       }),
 
+    // manter compatibilidade de payload (conversaId opcional)
     enviarMensagem: protectedProcedure
-      .input(z.object({
-        conversaId: z.string().optional(),
-        mensagem: z.string(),
-      }))
+      .input(
+        z.object({
+          conversaId: z.string().optional(),
+          mensagem: z.string().min(1),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const usuario = ctx.user;
         let conversaId = input.conversaId;
 
+        // garante uma conversa
         if (!conversaId) {
           conversaId = await db.createConversa(usuario.id);
         }
 
+        // persiste mensagem do usuário
         await db.createMensagem({
           conversaId: conversaId as string,
           role: "user",
           conteudo: input.mensagem,
         });
 
-        // Gerar contexto para a IA
+        // contexto factual do aluno (defensivo com shapes do DB)
         const matriculasAluno = await db.getMatriculasByAluno(usuario.id);
+        const contextoDisciplinas = (matriculasAluno as any[])
+          .map(m => {
+            const mat = m?.matricula ?? {};
+            const disciplina = m?.disciplina ?? {};
+            const periodo = mat?.periodo ?? m?.periodo ?? "N/A";
+            const media = mat?.mediaCalculada ?? mat?.media ?? m?.media ?? "N/A";
+            const faltas = mat?.faltas ?? m?.faltas ?? 0;
+            const status = mat?.status ?? m?.status ?? "N/A";
+            return `Disciplina: ${disciplina?.nome ?? "N/A"} (${disciplina?.codigo ?? "N/A"}), Período: ${periodo}, Média: ${media}, Faltas: ${faltas}, Status: ${status}`;
+          })
+          .join("\n");
 
-        // build contexto defensivamente
-        const contextoDisciplinas = (matriculasAluno as any[]).map(m => {
-          const mat = m?.matricula ?? {};
-          const disciplina = m?.disciplina ?? {};
-          const periodo = mat?.periodo ?? m?.periodo ?? 'N/A';
-          const media = mat?.media ?? m?.media ?? 'N/A';
-          const faltas = mat?.faltas ?? m?.faltas ?? 0;
-          const status = mat?.status ?? m?.status ?? 'N/A';
-          return `Disciplina: ${disciplina?.nome ?? 'N/A'} (${disciplina?.codigo ?? 'N/A'}), Período: ${periodo}, Média: ${media}, Faltas: ${faltas}, Status: ${status}`;
-        }).join('\n');
+        const contextoSistema =
+          `Você é o Hi, assistente virtual do Hub Inteligente UFPE.
+  Você PODE executar ferramentas (function calling) para consultar/atualizar o sistema acadêmico:
+  - Consultar/lçar notas e médias
+  - Registrar faltas
+  - Projeções/simulações de média
+  - Consultar horários e situação geral
 
-        const contextoSistema = `Você é o Hi, assistente virtual do Hub Inteligente UFPE.\n\nVocê pode executar as seguintes ações para ajudar o aluno:\n- Consultar médias e notas\n- Lançar notas em avaliações\n- Registrar faltas\n- Calcular projeções e simulações\n- Consultar horários e próximas aulas\n- Consultar situação geral\n\nQuando o aluno mencionar uma nota, falta ou quiser saber informações, USE AS FUNÇÕES DISPONÍVEIS.\n\nInformações do usuário:\n- Nome: ${usuario.name || 'Não informado'}\n- Curso: ${usuario.curso}\n- Período: ${usuario.periodo}\n\nDisciplinas do aluno:\n${contextoDisciplinas}\n\nHistórico de conversas:\n${(await db.getMensagens(conversaId as string)).map(m => `${m.role}: ${m.conteudo}`).join('\n')}\n`;
+  Quando a pergunta envolver dados do sistema, PREFIRA usar ferramentas.
+  Responda curto e confirme ações realizadas.
 
+  Usuário: ${usuario.name || "Não informado"} • Curso: ${usuario.curso ?? "?"} • Período: ${usuario.periodo ?? "?"}
+  Disciplinas do aluno:
+  ${contextoDisciplinas}
+
+  Histórico recente:
+  ${(await db.getMensagens(conversaId as string)).map(m => `${m.role}: ${m.conteudo}`).join("\n")}
+  `.trim();
+
+        // histórico para o modelo
         const messages: Message[] = [
           { role: "system", content: contextoSistema },
           { role: "user", content: input.mensagem },
         ];
 
-        // Importar funções do chatbot
+        // configura tools a partir do catálogo do chatbot
         const chatbotFunctions = getChatbotFunctions(ctx.user.id);
         const tools: OpenAITool[] = Object.values(chatbotFunctions).map((f: ChatbotFunctionEntry) => ({
           type: "function",
           function: f.tool,
         }));
-        
-        // Chamar IA com Function Calling
+
+        // 1ª chamada: o modelo decide se chama ferramentas
         let resposta = await invokeLLM({ messages, tools });
         let content = resposta.choices[0]?.message?.content;
-        let respostaTexto = typeof content === 'string' ? content : "Desculpe, não consegui processar sua mensagem.";
-        
-        // Loop de Function Calling
-        while (resposta.choices[0]?.message?.tool_calls) {
-          const toolCalls = resposta.choices[0].message.tool_calls;
-          
-          // Adicionar a chamada de função ao histórico
+        let respostaTexto = typeof content === "string" ? content : "Desculpe, não consegui processar sua mensagem.";
+
+        // Loop de function calling até não haver mais tool_calls
+        while (resposta.choices[0]?.message?.tool_calls?.length) {
+          const toolCalls = resposta.choices[0].message.tool_calls!;
+
+          // adiciona a mensagem do assistant que contém as tool_calls ao histórico
           messages.push(resposta.choices[0].message as any);
 
-          const toolResponses = [];
+          // executa cada tool e agrega respostas
+          const toolResponses: Message[] = [];
           for (const call of toolCalls) {
             const functionName = call.function.name as keyof typeof chatbotFunctions;
             const functionToCall = chatbotFunctions[functionName];
-            const args = JSON.parse(call.function.arguments);
-            
-            // Executar a função
-            const functionResult = await functionToCall.execute(args);
-            
-            // Adicionar o resultado ao histórico
+            const args = JSON.parse(call.function.arguments || "{}");
+
+            const result = functionToCall
+              ? await functionToCall.execute(args)
+              : { error: `função '${functionName}' não mapeada` };
+
             toolResponses.push({
-              role: "tool" as const,
+              role: "tool",
               tool_call_id: call.id,
-              content: JSON.stringify(functionResult),
+              content: JSON.stringify(result),
             });
           }
-          
+
+          // IMPORTANTE: usar spread para empilhar várias respostas de ferramenta
           messages.push(...toolResponses);
 
-          // Chamar IA novamente com o resultado da função
+          // nova chamada, agora com os resultados das tools
           resposta = await invokeLLM({ messages, tools });
           content = resposta.choices[0]?.message?.content;
-          respostaTexto = typeof content === 'string' ? content : "Desculpe, não consegui processar sua mensagem.";
+          respostaTexto = typeof content === "string" ? content : "Desculpe, não consegui processar sua mensagem.";
         }
 
+        // persiste resposta do assistant
         await db.createMensagem({
           conversaId: conversaId as string,
           role: "assistant",
@@ -468,6 +495,7 @@ export const appRouter = router({
         };
       }),
   }),
+
 });
 
 // export type para uso no client
