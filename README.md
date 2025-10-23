@@ -1,8 +1,8 @@
 # Hi UFPE - Hub Inteligente 🎓
 
 **Versão:** 1.0.0 (17 de Outubro de 2025)
-**Status:** ✅ Pronto para Apresentação
-**Repositório:** [https://github.com/leozitogs/testes-hi-ufpe](https://github.com/leozitogs/testes-hi-ufpe)
+**Status:** ✅ Pronto para Apresentação (Sprint 2)
+**Repositório:** [github.com/leozitogs/hi-ufpe-web](github.com/leozitogs/hi-ufpe-web)
 
 ## 📋 Sumário Executivo
 
@@ -92,7 +92,7 @@ O projeto segue uma arquitetura moderna e *full-stack*, utilizando o conceito de
 | **Backend** | **Node.js, Express, tRPC 11** | Servidor robusto com APIs *type-safe*, garantindo comunicação segura e tipada entre frontend e backend. |
 | **Banco de Dados** | **MySQL/TiDB, Drizzle ORM** | Banco de dados relacional com ORM moderno e *type-safe* para consultas. |
 | **IA** | **ChatGPT da OpenAI (GPT-4o-mini)** | Motor do chatbot, com suporte a **Function Calling** e **Streaming** de respostas. |
-| **Autenticação** | **OAuth via Manus** | Login seguro e padronizado. |
+| **Autenticação** | **OAuth** | Login seguro e padronizado. |
 | **Armazenamento** | **S3** | Utilizado para armazenamento de arquivos, como planilhas de upload. |
 
 ### Estrutura do Banco de Dados (Drizzle ORM)
@@ -138,8 +138,8 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
 
 2.  **Clonar e Instalar Dependências:**
     ```bash
-    git clone https://github.com/leozitogs/testes-hi-ufpe.git
-    cd testes-hi-ufpe
+    git clone https://github.com/leozitogs/hi-ufpe-web.git
+    cd hi-ufpe-web
     pnpm install
     ```
 
@@ -163,7 +163,7 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
     pnpm db:push
     
     # 2. Popula o banco com dados reais do CIn 2025.2 (Opcional, mas recomendado)
-    pnpm tsx scripts/seed-cin-2025-2.ts
+    pnpm tsx scripts/seed-fixed.ts
     ```
 
 5.  **Iniciar o Servidor de Desenvolvimento:**
@@ -236,14 +236,13 @@ O **Hi UFPE** se posiciona como uma solução superior ao SIGAA, focando na expe
 
 1.  **App Mobile** - Versão nativa para iOS e Android.
 2.  **Notificações Push** - Alertas em tempo real.
-3.  **Integração SIGAA** - Importar dados do SIGAA oficial.
-4.  **OAuth UFPE** - Login com credenciais da universidade.
-5.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
-6.  **Gamificação** - Badges e conquistas.
+3.  **OAuth UFPE** - Login com credenciais da universidade.
+4.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
+5.  **Gamificação** - Badges e conquistas.
 
 ---
 
-**Desenvolvido com ❤️ para a comunidade UFPE**
+**Desenvolvido com ❤️ pela equipe sCina**
 
 **Disciplina:** Desenvolvimento de Software  
 **Curso:** Ciência da Computação - UFPE  
