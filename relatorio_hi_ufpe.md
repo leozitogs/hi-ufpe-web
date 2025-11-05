@@ -1,5 +1,4 @@
-# Guia Leigo — Hi UFPE (file-by-file, explicativo)
-_Gerado em 2025-11-05 08:33_
+# Relatório Explicativo — Hi UFPE (file-by-file, explicativo)
 
 > Objetivo: explicar **cada pasta e cada arquivo**, em linguagem simples, e mostrar como se conectam.
 
