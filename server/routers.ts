@@ -437,7 +437,15 @@ export const appRouter = router({
         ];
 
         // configura tools a partir do catálogo do chatbot
-        const chatbotFunctions = getChatbotFunctions(ctx.user.id);
+
+        const periodo =
+          (typeof input === "object" && input && "periodo" in input && (input as any).periodo) ||
+          (ctx as any)?.periodo ||
+          process.env.PERIODO_ATUAL ||
+          "2025.2";
+
+        const chatbotFunctions = getChatbotFunctions({ alunoId: ctx.user.id, periodo });
+
         const tools: OpenAITool[] = Object.values(chatbotFunctions).map((f: ChatbotFunctionEntry) => ({
           type: "function",
           function: f.tool,

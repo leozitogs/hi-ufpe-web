@@ -488,13 +488,15 @@ async function consultarFaltas(alunoId: string, disciplinaNome: string) {
   }
 }
 
-async function consultarProximaAula(alunoId: string) {
+async function consultarProximaAula(alunoId: string, periodo?: string) {
+  const periodoAtual = periodo ?? process.env.PERIODO_ATUAL ?? "2025.2";
+
   try {
     const hoje = new Date();
     const diaSemanaAtual = hoje.getDay(); // 0 (Domingo) - 6 (Sábado)
     const horaAtual = hoje.getHours() + hoje.getMinutes() / 60;
 
-    const horarios = await db.getHorariosByAluno(alunoId, "2025.1");
+    const horarios = await db.getHorariosByAluno(alunoId, periodoAtual);
 
     if (!horarios || horarios.length === 0) {
       return { mensagem: "Você não tem horários cadastrados para o período atual." };
@@ -549,9 +551,11 @@ async function consultarProximaAula(alunoId: string) {
   }
 }
 
-async function consultarSituacaoGeral(alunoId: string) {
+async function consultarSituacaoGeral(alunoId: string, periodo?: string) {
+  const periodoAtual = periodo ?? process.env.PERIODO_ATUAL ?? "2025.2";
+
   try {
-    const matriculasLista = await db.getMatriculasByAluno(alunoId, "2025.1");
+    const matriculasLista = await db.getMatriculasByAluno(alunoId, periodoAtual);
     
     if (!matriculasLista || matriculasLista.length === 0) {
       return { mensagem: "Você não está matriculado em nenhuma disciplina neste período." };
@@ -607,21 +611,22 @@ export const chatbotFunctions = {
   },
   consultar_proxima_aula: {
     tool: CHATBOT_FUNCTIONS[6],
-    execute: (args: any) => consultarProximaAula(args.alunoId),
+    execute: async (args: any) => consultarProximaAula(args.alunoId, args.periodo),
   },
   consultar_situacao_geral: {
     tool: CHATBOT_FUNCTIONS[7],
-    execute: (args: any) => consultarSituacaoGeral(args.alunoId),
+    execute: async (args: any) => consultarSituacaoGeral(args.alunoId, args.periodo),
   },
 } as const;
 
-export function getChatbotFunctions(alunoId: string) {
+export function getChatbotFunctions(params: { alunoId: string; periodo: string }) {
+  const { alunoId, periodo } = params;
   return Object.fromEntries(
     Object.entries(chatbotFunctions).map(([key, value]) => [
       key,
       {
-        tool: value.tool,
-        execute: (args: any) => (value as any).execute({ ...args, alunoId }),
+        tool: (value as any).tool,
+        execute: (args: any) => (value as any).execute({ ...args, alunoId, periodo }),
       },
     ])
   );
