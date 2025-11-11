@@ -80,20 +80,189 @@ O chatbot fornece **insights e alertas proativos** sobre a situação acadêmica
 
 ---
 
+## 🎯 Diferenciais Competitivos
+
+O **Hi UFPE** se posiciona como uma solução superior ao SIGAA, focando na experiência e autonomia do estudante.
+
+| Aspecto | SIGAA | Hi UFPE |
+|:--------|:------|:--------|
+| **Interface** | Antiga, burocrática | Moderna, intuitiva (React + TailwindCSS) |
+| **Gestão de Dados** | Dependente do Administrador | **Self-service** (Aluno gerencia) |
+| **Consultas** | Navegação de menus complexos | **Chatbot com IA** (Linguagem Natural) |
+| **Cálculo de Média** | Manual | **Automático** |
+| **Avaliação Flexível** | ❌ Não suporta | ✅ Suporte total por disciplina |
+| **Inteligência Artificial** | ❌ Não possui | ✅ **ChatGPT da OpenAI com Function Calling** |
+| **Insights** | ❌ Não possui | ✅ Alertas automáticos e projeções de notas |
+
+---
+
+## 👥 Estrutura da Equipe (sCIna)
+
+O projeto foi desenvolvido sob a metodologia **Scrum**, com uma estrutura de equipe bem definida para otimizar o fluxo de trabalho e a entrega de valor.
+
+| Papel (Estrutura Ágil) | Responsabilidade Principal |
+| :--- | :--- |
+| **Product Owner (PO)** | Definir a visão do produto, gerenciar o *backlog* e garantir o alinhamento com as necessidades dos usuários. |
+| **Scrum Master** | Facilitar os rituais, remover impedimentos e garantir a adesão aos processos ágeis. |
+| **Líder Técnico / UX Lead** | Referência para decisões técnicas e de design, garantindo a qualidade e viabilidade das soluções. |
+| **Equipe de Desenvolvimento** | Grupo multifuncional responsável pela pesquisa, design, implementação e validação do produto. |
+
+**Ferramentas de Colaboração:** Trello (Gestão de Tarefas), Google Meet/Whatsapp (Comunicação), Google Drive/GitHub (Documentação).
+
+---
+
+## 🤝 Guia de Contribuição (CONTRIBUTING.md)
+
+Para contribuir com o projeto, consulte o arquivo `CONTRIBUTING.md` para detalhes sobre o fluxo de trabalho Git, convenções de nomenclatura e o **Checklist de Qualidade (Pré-Integração)**.
+
+---
+
+## 🚀 Próximos Passos (Roadmap Futuro)
+
+1.  **App Mobile** - Versão nativa para iOS e Android.
+2.  **Notificações Push** - Alertas em tempo real.
+3.  **OAuth UFPE** - Login com credenciais da universidade.
+4.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
+5.  **Gamificação** - Badges e conquistas.
+
+---
+
+# 👨‍💻 Dev Guide
+
+Este guia contém informações técnicas detalhadas para desenvolvedores que desejam contribuir ou trabalhar com o projeto. Para instruções de instalação rápida, vá para [Configuração e Instalação (Guia Detalhado)](#-configuração-e-instalação-guia-detalhada).
+
+---
+
+## Stack Tecnológico
+
+### Frontend
+- **React 19** + **TypeScript** - Interface tipada
+- **Tailwind CSS 4** - Estilização utilitária
+- **shadcn/ui** - Componentes reutilizáveis
+- **Wouter** - Roteamento leve
+- **React Query** - Gestão de cache/estado
+- **Vite** - Build rápido
+
+### Backend
+- **Node.js + Express** - Servidor
+- **tRPC 11** - APIs type-safe
+- **Drizzle ORM** - Type-safe database queries
+- **MySQL/TiDB** - Banco de dados relacional
+
+### IA & Integrações
+- **OpenAI ChatGPT (GPT-4o-mini)** - Chatbot com Function Calling
+- **AWS S3** - Armazenamento de arquivos
+- **OAuth** - Autenticação
+
+### DevOps & Quality
+- **TypeScript** - Type-checking
+- **Prettier** - Formatação de código
+- **Vitest** - Testes unitários
+- **Drizzle Kit** - Migrações de banco
+
+---
+
+## Estrutura de Pastas
+
+Consulte relatorio_hi_ufpe.md para detalhes completos. Aqui está um resumo:
+
+```
+hi-ufpe-web/
+├── client/                           # Frontend (React)
+│   ├── index.html                   # Entrada HTML
+│   ├── public/                      # Assets estáticos
+│   └── src/
+│       ├── App.tsx                  # Componente raiz
+│       ├── main.tsx                 # Ponto de entrada
+│       ├── index.css                # Estilos globais
+│       ├── components/              # Componentes reutilizáveis
+│       ├── contexts/                # Context API (ThemeContext, etc)
+│       ├── pages/                   # Páginas (Dashboard, Chat, etc)
+│       ├── lib/                     # Utilitários (tRPC client, hooks)
+│       └── hooks/                   # Custom React hooks
+│
+├── server/                           # Backend (Node.js + tRPC)
+│   ├── routers.ts                   # Rotas tRPC principais
+│   ├── chat.router.ts               # Rotas do chatbot
+│   ├── db.ts                        # Queries do banco de dados
+│   ├── storage.ts                   # Integração com S3
+│   └── _core/
+│       ├── index.ts                 # Inicialização
+│       ├── trpc.ts                  # Configuração tRPC
+│       ├── env.ts                   # Variáveis de ambiente
+│       ├── cookies.ts               # Gestão de cookies
+│       ├── oauth.ts                 # Autenticação OAuth
+│       ├── llm.ts                   # Integração com ChatGPT
+│       ├── chatbot-functions.ts     # Function Calling do IA
+│       ├── systemRouter.ts          # Rotas do sistema
+│       ├── vite.ts                  # Setup Vite
+│       ├── context.ts               # Contexto tRPC
+│       └── sdk.ts                   # SDK do banco de dados
+│
+├── drizzle/                          # Migrações e Schema
+│   ├── schema.ts                    # Definição das tabelas
+│   ├── relations.ts                 # Relacionamentos entre tabelas
+│   ├── 000*.sql                     # Arquivos de migração
+│   └── meta/                        # Snapshots das migrações
+│
+├── scripts/                          # Scripts utilitários
+│   ├── seed-fixed.ts                # Popula banco com dados
+│   ├── check_enrollments.ts         # Verifica matrículas
+│   └── test_chatbot.ts              # Testa chatbot
+│
+├── shared/                           # Código compartilhado
+│   ├── types.ts                     # Tipos TypeScript
+│   └── const.ts                     # Constantes
+│
+├── patches/                          # Patches de dependências
+│
+├── .env.example                      # Template de .env
+├── .gitignore                        # Arquivos ignorados
+├── package.json                      # Dependências do projeto
+├── pnpm-lock.yaml                   # Lock de dependências
+├── tsconfig.json                    # Configuração TypeScript
+├── vite.config.ts                   # Configuração Vite
+├── drizzle.config.ts                # Configuração Drizzle
+├── README.md                         # Documentação principal
+├── SETUP_BANCO_LOCAL.md             # Setup do MySQL
+└── contributing.md                  # Guia de contribuição
+```
+
+---
+
 ## 🏗️ Arquitetura Técnica e Stack
 
 O projeto segue uma arquitetura moderna e *full-stack*, utilizando o conceito de *type-safety* de ponta a ponta, essencial para a robustez de um sistema acadêmico.
 
-### Stack Tecnológica
+### Fluxo de Dados
 
-| Componente | Tecnologia | Detalhes |
-| :--- | :--- | :--- |
-| **Frontend** | **React 19, TypeScript, Tailwind CSS 4, shadcn/ui** | Interface moderna, responsiva (*mobile-first*) e tipada. Utiliza **Wouter** para roteamento e **React Query** para gestão de cache/estado. |
-| **Backend** | **Node.js, Express, tRPC 11** | Servidor robusto com APIs *type-safe*, garantindo comunicação segura e tipada entre frontend e backend. |
-| **Banco de Dados** | **MySQL/TiDB, Drizzle ORM** | Banco de dados relacional com ORM moderno e *type-safe* para consultas. |
-| **IA** | **ChatGPT da OpenAI (GPT-4o-mini)** | Motor do chatbot, com suporte a **Function Calling** e **Streaming** de respostas. |
-| **Autenticação** | **OAuth** | Login seguro e padronizado. |
-| **Armazenamento** | **S3** | Utilizado para armazenamento de arquivos, como planilhas de upload. |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend (React)                      │
+│  ├─ Páginas (Dashboard, Chat, Disciplinas, Admin)          │
+│  ├─ Componentes (shadcn/ui + custom)                       │
+│  └─ Estado (React Query + Context)                         │
+└────────────────┬────────────────────────────────────────────┘
+                 │ tRPC (type-safe API calls)
+                 ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     Backend (Node.js)                        │
+│  ├─ Routers (tRPC endpoints)                               │
+│  ├─ chat.router.ts (Chatbot Logic)                         │
+│  ├─ routers.ts (Main routes)                               │
+│  └─ _core/ (Business logic, OAuth, LLM)                   │
+└────────────────┬────────────────────────────────────────────┘
+                 │ Drizzle ORM
+                 ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   MySQL Database                             │
+│  ├─ users, disciplinas, professores                        │
+│  ├─ horarios, matriculas, avaliacoes                       │
+│  ├─ registro_faltas, comunicados                           │
+│  └─ conversas, mensagens                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
 
 ### Estrutura do Banco de Dados (Drizzle ORM)
 
@@ -173,6 +342,100 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
     *   **Frontend:** `http://localhost:5173`
     *   **Backend:** `http://localhost:3000`
 
+
+### Schema com Drizzle ORM
+
+O schema está definido em schema.ts:
+
+````typescript
+// Exemplo simplificado
+export const users = createTable('users', {
+  id: integer().primaryKey().autoincrement(),
+  email: varchar({ length: 255 }).unique(),
+  name: varchar({ length: 255 }),
+  createdAt: timestamp().defaultNow(),
+});
+
+export const disciplinas = createTable('disciplinas', {
+  id: integer().primaryKey().autoincrement(),
+  codigo: varchar({ length: 50 }).unique(),
+  nome: varchar({ length: 255 }),
+  creditos: integer(),
+  userId: integer().references(() => users.id),
+});
+````
+
+### Relacionamentos
+
+Definidos em relations.ts:
+
+````typescript
+export const usersRelations = relations(users, ({ many }) => ({
+  disciplinas: many(disciplinas),
+  matriculas: many(matriculas),
+}));
+
+export const disciplinasRelations = relations(disciplinas, ({ many, one }) => ({
+  horarios: many(horarios),
+  avaliacoes: many(avaliacoes),
+  usuario: one(users, {
+    fields: [disciplinas.userId],
+    references: [users.id],
+  }),
+}));
+````
+
+### Migrations
+
+Quando alterar o schema:
+
+```bash
+# 1. Gerar migração
+pnpm drizzle-kit generate
+
+# 2. Revisar arquivo em drizzle/000X_*.sql
+
+# 3. Aplicar no banco
+pnpm db:push
+```
+
+### Queries com Drizzle
+
+No db.ts:
+
+````typescript
+import { db } from './db';
+import { disciplinas, users } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
+
+// SELECT
+const userDisciplinas = await db
+  .select()
+  .from(disciplinas)
+  .where(eq(disciplinas.userId, userId));
+
+// INSERT
+await db.insert(disciplinas).values({
+  codigo: 'CIN0130',
+  nome: 'Sistemas Digitais',
+  creditos: 4,
+  userId: 1,
+});
+
+// UPDATE
+await db
+  .update(disciplinas)
+  .set({ nome: 'Novo Nome' })
+  .where(eq(disciplinas.id, id));
+
+// DELETE
+await db
+  .delete(disciplinas)
+  .where(eq(disciplinas.id, id));
+````
+
+---
+
 ### Scripts de Desenvolvimento Úteis
 
 | Comando | Descrição |
@@ -188,25 +451,6 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
 
 ---
 
-## 👥 Estrutura da Equipe (sCIna)
-
-O projeto foi desenvolvido sob a metodologia **Scrum**, com uma estrutura de equipe bem definida para otimizar o fluxo de trabalho e a entrega de valor.
-
-| Papel (Estrutura Ágil) | Responsabilidade Principal |
-| :--- | :--- |
-| **Product Owner (PO)** | Definir a visão do produto, gerenciar o *backlog* e garantir o alinhamento com as necessidades dos usuários. |
-| **Scrum Master** | Facilitar os rituais, remover impedimentos e garantir a adesão aos processos ágeis. |
-| **Líder Técnico / UX Lead** | Referência para decisões técnicas e de design, garantindo a qualidade e viabilidade das soluções. |
-| **Equipe de Desenvolvimento** | Grupo multifuncional responsável pela pesquisa, design, implementação e validação do produto. |
-
-**Ferramentas de Colaboração:** Trello (Gestão de Tarefas), Google Meet/Whatsapp (Comunicação), Google Drive/GitHub (Documentação).
-
----
-
-## 🤝 Guia de Contribuição (CONTRIBUTING.md)
-
-Para contribuir com o projeto, consulte o arquivo `CONTRIBUTING.md` para detalhes sobre o fluxo de trabalho Git, convenções de nomenclatura e o **Checklist de Qualidade (Pré-Integração)**.
-
 ### Checklist de Qualidade (Pré-Integração)
 
 1.  **Funcionalidade Verificada:** A nova funcionalidade implementada funciona corretamente.
@@ -216,35 +460,8 @@ Para contribuir com o projeto, consulte o arquivo `CONTRIBUTING.md` para detalhe
 
 ---
 
-## 🎯 Diferenciais Competitivos
-
-O **Hi UFPE** se posiciona como uma solução superior ao SIGAA, focando na experiência e autonomia do estudante.
-
-| Aspecto | SIGAA | Hi UFPE |
-|:--------|:------|:--------|
-| **Interface** | Antiga, burocrática | Moderna, intuitiva (React + TailwindCSS) |
-| **Gestão de Dados** | Dependente do Administrador | **Self-service** (Aluno gerencia) |
-| **Consultas** | Navegação de menus complexos | **Chatbot com IA** (Linguagem Natural) |
-| **Cálculo de Média** | Manual | **Automático** |
-| **Avaliação Flexível** | ❌ Não suporta | ✅ Suporte total por disciplina |
-| **Inteligência Artificial** | ❌ Não possui | ✅ **ChatGPT da OpenAI com Function Calling** |
-| **Insights** | ❌ Não possui | ✅ Alertas automáticos e projeções de notas |
-
----
-
-## 🚀 Próximos Passos (Roadmap Futuro)
-
-1.  **App Mobile** - Versão nativa para iOS e Android.
-2.  **Notificações Push** - Alertas em tempo real.
-3.  **OAuth UFPE** - Login com credenciais da universidade.
-4.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
-5.  **Gamificação** - Badges e conquistas.
-
----
-
 **Desenvolvido com ❤️ pela equipe sCina**
 
 **Disciplina:** Desenvolvimento de Software  
 **Curso:** Ciência da Computação - UFPE  
 **Período:** 2025.2
-
