@@ -1,6 +1,4 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
@@ -8,16 +6,34 @@
     "module": "ESNext",
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
+    
     "baseUrl": ".",
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "@testing-library/jest-dom", "vitest/globals"],
+    
     "paths": {
       "@/*": ["./client/src/*"],
+      "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"]
     }
-  }
+  },
+  
+  "include": [
+    "client/src",
+    "client/tests",
+    "server",
+    "shared",
+    "scripts"
+  ],
+  
+  "exclude": [
+    "node_modules", 
+    "build", 
+    "dist"
+    // REMOVIDO: "**/*.test.ts" -> Agora o TS vai ler seus testes e entender os imports!
+  ]
 }

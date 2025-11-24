@@ -6,7 +6,7 @@ import * as db from "../db";
 import { eq, and } from "drizzle-orm";
 import { matriculas } from "../../drizzle/schema";
 import { simularMediaComNota } from "../utils/calculos"; 
-import { encontrarProximaAula } from "server/utils/horarios";
+import { encontrarProximaAula } from "../utils/horarios";
 
 // Definições das funções para a OpenAI
 export const CHATBOT_FUNCTIONS = [
