@@ -5,6 +5,8 @@
 import * as db from "../db";
 import { eq, and } from "drizzle-orm";
 import { matriculas } from "../../drizzle/schema";
+import { simularMediaComNota } from "../utils/calculos"; 
+import { encontrarProximaAula } from "server/utils/horarios";
 
 // Definições das funções para a OpenAI
 export const CHATBOT_FUNCTIONS = [
@@ -182,7 +184,7 @@ export async function executarFuncao(
 
 // Implementação das funções
 
-async function consultarMedia(alunoId: string, disciplinaNome: string) {
+export async function consultarMedia(alunoId: string, disciplinaNome: string) {
   try {
     // Buscar matrícula
     const matriculasLista = await db.getMatriculasByAluno(alunoId);
@@ -225,7 +227,7 @@ async function consultarMedia(alunoId: string, disciplinaNome: string) {
   }
 }
 
-async function lancarNota(
+export async function lancarNota(
   alunoId: string,
   disciplinaNome: string,
   avaliacaoNome: string,
@@ -278,7 +280,7 @@ async function lancarNota(
   }
 }
 
-async function registrarFalta(
+export async function registrarFalta(
   alunoId: string,
   disciplinaNome: string,
   data: string,
@@ -318,7 +320,7 @@ async function registrarFalta(
   }
 }
 
-async function calcularProjecao(
+export async function calcularProjecao(
   alunoId: string,
   disciplinaNome: string,
   mediaDesejada: number
@@ -384,7 +386,7 @@ async function calcularProjecao(
   }
 }
 
-async function simularNota(
+export async function simularNota(
   alunoId: string,
   disciplinaNome: string,
   avaliacaoNome: string,
@@ -419,30 +421,11 @@ async function simularNota(
       return { error: `Avaliação '${avaliacaoNome}' não encontrada` };
     }
     
-    // Calcular média simulada
-    let somaNotas = 0;
-    let somaPesos = 0;
+    // === REFATORAÇÃO: Usando a função pura de cálculo ===
+    const mediaSimulada = simularMediaComNota(avaliacoes, avaliacao.id, notaSimulada);
     
-    avaliacoes.forEach((a: any) => {
-      let nota: number | null = null;
-      let peso = Number(a.peso);
-
-      if (a.id === avaliacao.id) {
-        // É a avaliação simulada
-        nota = notaSimulada;
-      } else if (a.notaObtida) {
-        // É uma avaliação já lançada
-        nota = Number(a.notaObtida);
-      }
-      
-      if (nota !== null) {
-        somaNotas += nota * peso;
-        somaPesos += peso;
-      }
-    });
-    
-    const mediaSimulada = somaPesos > 0 ? somaNotas / somaPesos : 0;
     const mediaAtual = Number(matricula.matricula.mediaCalculada || matricula.matricula.media || 0);
+    const totalPesos = avaliacoes.reduce((acc: number, cur: any) => acc + (Number(cur.peso) || 0), 0);
     
     return {
       disciplina: matricula.disciplina.nome,
@@ -451,14 +434,14 @@ async function simularNota(
       media_atual: mediaAtual.toFixed(2),
       media_simulada: mediaSimulada.toFixed(2),
       diferenca: (mediaSimulada - mediaAtual).toFixed(2),
-      total_pesos_considerados: somaPesos,
+      total_pesos_considerados: totalPesos,
     };
   } catch (error: any) {
     return { error: error.message };
   }
 }
 
-async function consultarFaltas(alunoId: string, disciplinaNome: string) {
+export async function consultarFaltas(alunoId: string, disciplinaNome: string) {
   try {
     // Buscar matrícula
     const matriculasLista = await db.getMatriculasByAluno(alunoId);
@@ -488,62 +471,45 @@ async function consultarFaltas(alunoId: string, disciplinaNome: string) {
   }
 }
 
-async function consultarProximaAula(alunoId: string, periodo?: string) {
+export async function consultarProximaAula(alunoId: string, periodo?: string) {
   const periodoAtual = periodo ?? process.env.PERIODO_ATUAL ?? "2025.2";
 
   try {
-    const hoje = new Date();
-    const diaSemanaAtual = hoje.getDay(); // 0 (Domingo) - 6 (Sábado)
-    const horaAtual = hoje.getHours() + hoje.getMinutes() / 60;
-
     const horarios = await db.getHorariosByAluno(alunoId, periodoAtual);
 
     if (!horarios || horarios.length === 0) {
       return { mensagem: "Você não tem horários cadastrados para o período atual." };
     }
 
-    let proximaAula: any = null;
+    // Mapear o retorno complexo do banco (JOINs) para o formato simples da nossa util
+    const listaFormatada = horarios.map((h: any) => ({
+      diaSemana: h.horario.diaSemana,
+      horaInicio: h.horario.horaInicio,
+      horaFim: h.horario.horaFim,
+      disciplina: h.disciplina.nome,
+      local: h.horario.sala || h.horario.local,
+      professor: h.professor ? h.professor.nome : 'Não informado'
+    }));
 
-    // 1. Procurar no dia de hoje
-    const aulasDeHoje = horarios
-      .filter((h: any) => h.horario.diaSemana === diaSemanaAtual)
-      .sort((a: any, b: any) => parseFloat(a.horario.horaInicio) - parseFloat(b.horario.horaInicio));
-
-    for (const aula of aulasDeHoje) {
-      if (parseFloat(aula.horario.horaInicio) > horaAtual) {
-        proximaAula = aula;
-        break;
-      }
-    }
-
-    // 2. Se não encontrou, procurar nos próximos dias da semana
-    if (!proximaAula) {
-      for (let i = 1; i <= 7; i++) {
-        const proximoDia = (diaSemanaAtual + i) % 7;
-        const aulasDoDia = horarios
-          .filter((h: any) => h.horario.diaSemana === proximoDia)
-          .sort((a: any, b: any) => parseFloat(a.horario.horaInicio) - parseFloat(b.horario.horaInicio));
-
-        if (aulasDoDia.length > 0) {
-          proximaAula = aulasDoDia[0];
-          break;
-        }
-      }
-    }
+    // --- LÓGICA PURA AQUI ---
+    // Passamos undefined no 2º parametro para ele usar "new Date()" (agora)
+    const proximaAula = encontrarProximaAula(listaFormatada);
 
     if (!proximaAula) {
-      return { mensagem: "Não foi possível encontrar sua próxima aula." };
+      return { mensagem: "Não foi possível encontrar sua próxima aula na grade desta semana." };
     }
 
-    const diasDaSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-
+    // Mapeia o dia numérico de volta para texto legível se necessário (opcional)
+    // Mas como nosso 'listaFormatada' mantém o diaSemana original do banco, 
+    // se o banco já retorna "Segunda-feira", está pronto.
+    
     return {
-      disciplina: proximaAula.disciplina.nome,
-      dia_semana: diasDaSemana[proximaAula.horario.diaSemana],
-      hora_inicio: proximaAula.horario.horaInicio,
-      hora_fim: proximaAula.horario.horaFim,
-      local: proximaAula.horario.local,
-      professor: proximaAula.professor.nome,
+      disciplina: proximaAula.disciplina,
+      dia_semana: proximaAula.diaSemana, // O texto original do banco
+      hora_inicio: proximaAula.horaInicio,
+      hora_fim: proximaAula.horaFim,
+      local: proximaAula.local,
+      professor: proximaAula.professor,
     };
 
   } catch (error: any) {
