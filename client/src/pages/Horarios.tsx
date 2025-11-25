@@ -10,7 +10,6 @@ export default function Horarios() {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   
-  // 1. Capturamos o isLoading aqui
   const { data: horarios, isLoading } = trpc.horarios.listByAluno.useQuery(
     { periodo: "2025.1" }, 
     { enabled: isAuthenticated }
@@ -28,7 +27,6 @@ export default function Horarios() {
     );
   }
 
-  // 2. Tela de Carregamento (Evita o Crash)
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-primary/5 text-primary">
@@ -38,16 +36,17 @@ export default function Horarios() {
     );
   }
 
-  // 3. Ajuste dos nomes para bater com o banco de dados (Feira)
   const dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-primary/5">
       <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="container flex h-16 items-center gap-4 px-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/")}>
+          {/* --- ALTERAÇÃO AQUI: Redirecionando para /dashboard --- */}
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/dashboard")}>
             <ArrowLeft className="h-4 w-4 mr-2" />Voltar
           </Button>
+          
           <Calendar className="h-6 w-6 text-primary" />
           <span className="font-bold text-xl">Meus Horários</span>
         </div>
@@ -55,7 +54,6 @@ export default function Horarios() {
 
       <div className="container py-8 space-y-6 px-4">
         {dias.map((dia) => {
-          // Filtro robusto: verifica estrutura plana ou aninhada
           const aulasDoDia = horarios?.filter((h: any) => {
             const diaAula = h.diaSemana || h.horario?.diaSemana;
             return diaAula === dia;
@@ -68,7 +66,6 @@ export default function Horarios() {
               <h2 className="text-xl font-semibold mb-4 text-primary">{dia}</h2>
               <div className="space-y-4">
                 {aulasDoDia.map((item: any, index: number) => {
-                  // Extração segura dos dados
                   const nomeDisciplina = item.disciplina?.nome || item.nome || "Disciplina";
                   const horaInicio = item.horaInicio || item.horario?.horaInicio;
                   const horaFim = item.horaFim || item.horario?.horaFim;

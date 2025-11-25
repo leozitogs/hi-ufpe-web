@@ -32,13 +32,13 @@ import {
   Zap,
   UserCircle,
   PieChart,
-  RefreshCcw // Ícone de loading
+  RefreshCcw
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 
 /* --------------------------
-   Helper: Próxima aula (CORRIGIDO)
+   Helper: Próxima aula
    -------------------------- */
 const calculateNextClass = (horarios: any[] | undefined) => {
   if (!horarios || horarios.length === 0) return "N/A";
@@ -58,8 +58,6 @@ const calculateNextClass = (horarios: any[] | undefined) => {
 
   let nextClass = null;
 
-  // CORREÇÃO: Acessamos h.diaSemana direto, em vez de h.horario.diaSemana
-  // O operador ?. (optional chaining) previne quebras se o dado vier misto
   const aulasHoje = horarios
     .filter((h: any) => (h.diaSemana || h.horario?.diaSemana) === diaAtual)
     .sort((a: any, b: any) => {
@@ -139,8 +137,6 @@ export default function Dashboard() {
   const { user, isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
 
-  // queries (sempre no topo)
-  // ADICIONADO: isLoading renomeado para uso no check
   const { data: comunicados, isLoading: loadingComunicados } = trpc.comunicados.list.useQuery();
   const { data: matriculas, isLoading: loadingMatriculas } = trpc.matriculas.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -150,11 +146,9 @@ export default function Dashboard() {
     { enabled: isAuthenticated }
   );
 
-  // animated numbers (hooks também no topo)
   const disciplinasCount = useAnimatedNumber(matriculas?.length || 0, 900);
   const comunicadosCount = useAnimatedNumber(comunicados?.length || 0, 900);
 
-  // mounted + theme (hooks)
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -168,7 +162,6 @@ export default function Dashboard() {
     setTheme(initialTheme);
     applyTheme(initialTheme);
 
-    // accessibility: respect reduce motion
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.documentElement.classList.add("reduce-motion");
     }
@@ -190,10 +183,6 @@ export default function Dashboard() {
     applyTheme(newTheme);
   };
 
-  /* ======================
-     3D tilt handlers (declarados antes de qualquer early return)
-     ====================== */
-
   const prefersReducedMotion = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const handleTilt = useCallback((e: React.MouseEvent<HTMLElement>) => {
@@ -205,7 +194,7 @@ export default function Dashboard() {
     const cx = rect.width / 2;
     const cy = rect.height / 2;
 
-    const maxDeg = 6; // intensidade moderada
+    const maxDeg = 6;
     const rx = ((y - cy) / cy) * maxDeg * -1;
     const ry = ((x - cx) / cx) * maxDeg;
 
@@ -231,10 +220,6 @@ export default function Dashboard() {
     el.style.transition = 'transform 400ms cubic-bezier(.2,.9,.2,1)';
   }, []);
 
-  /* --------------------------
-     End of hooks / handlers — safe to return after this
-     -------------------------- */
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-yellow-50">
@@ -255,7 +240,6 @@ export default function Dashboard() {
     );
   }
 
-  // --- NOVO BLOCO DE LOADING (Inserido Corretamente Aqui) ---
   if (loadingMatriculas || loadingHorarios || loadingComunicados) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-blue-700 bg-gradient-to-br from-blue-50 to-yellow-50">
@@ -272,7 +256,6 @@ export default function Dashboard() {
     setLocation("/");
   };
 
-  /* Quick actions: removed stripes, added simple CTA button */
   const quickActions = [
     { icon: MessageSquare, title: "Chatbot", description: "Converse com a IA", href: "/chat" },
     { icon: Calendar, title: "Horários", description: "Ver grade horária", href: "/horarios" },
@@ -282,13 +265,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 text-gray-900 overflow-y-auto antialiased">
-      {/* Floating glass accents */}
       <div aria-hidden className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-24 -left-16 w-[520px] h-[520px] rounded-full bg-blue-200/30 mix-blend-multiply blur-3xl animate-blob-slow" />
         <div className="absolute top-24 right-8 w-[420px] h-[420px] rounded-full bg-yellow-200/18 mix-blend-multiply blur-3xl animate-blob-mid" />
       </div>
 
-      {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-4">
@@ -299,7 +280,7 @@ export default function Dashboard() {
               <span className="text-white font-bold">Hi</span>
             </div>
             <div className="leading-none">
-              <div className="text-blue-800 font-bold">UFPE</div> {/* azul conforme solicitado */}
+              <div className="text-blue-800 font-bold">UFPE</div>
               <div className="text-xs text-blue-600">Hub Inteligente</div>
             </div>
           </div>
@@ -326,7 +307,6 @@ export default function Dashboard() {
                 <DropdownMenuItem onSelect={() => setLocation('/profile')}><UserCircle className="mr-2 h-4 w-4" /> Perfil</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setLocation('/settings')}><Settings className="mr-2 h-4 w-4" /> Configurações</DropdownMenuItem>
 
-                {/* Theme toggle as single item (clearer and aligned) */}
                 <DropdownMenuItem onSelect={toggleTheme}>
                   { theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" /> }
                   { theme === 'dark' ? 'Tema Claro' : 'Tema Escuro' }
@@ -341,17 +321,13 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main container */}
       <div className="container mx-auto py-8 space-y-8 px-4 relative z-10">
-        {/* Welcome + small summary */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Bem-vindo de volta! 👋</h1>
           <p className="text-blue-600">Resumo rápido das suas atividades acadêmicas — interativo e atualizado.</p>
         </div>
 
-        {/* Top stats: removed non-functional labels */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Disciplinas */}
           <Card
             onMouseMove={handleTilt}
             onMouseLeave={handleLeave}
@@ -375,7 +351,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Período - removi rótulos não funcionais */}
           <Card
             onMouseMove={handleTilt}
             onMouseLeave={handleLeave}
@@ -396,7 +371,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Comunicados - removido "Novos/Últimas 48h/Atualizado" */}
           <Card
             onMouseMove={handleTilt}
             onMouseLeave={handleLeave}
@@ -411,16 +385,24 @@ export default function Dashboard() {
                   <h2 className="text-3xl font-bold text-slate-900">{comunicadosCount}</h2>
                 </div>
                 <div className="relative">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  {/* --- ALTERAÇÃO DE ÍCONE E COR --- */}
+                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300 ${
+                    comunicadosCount > 0 
+                      ? "from-blue-500 to-cyan-400" 
+                      : "from-teal-500 to-emerald-400"
+                  }`}>
                     <Bell className="h-6 w-6 text-white" />
                   </div>
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+                  
+                  {/* --- ALTERAÇÃO DE BOLINHA --- */}
+                  {comunicadosCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white animate-pulse" />
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Próxima aula - removido avise-me */}
           <Card
             onMouseMove={handleTilt}
             onMouseLeave={handleLeave}
@@ -442,7 +424,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Ações Rápidas — sem linhas, com botão pill animado */}
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-5 w-5 text-blue-600" />
@@ -475,7 +456,6 @@ export default function Dashboard() {
                       <div className="text-sm text-blue-600 mt-1">{a.description}</div>
                     </div>
 
-                    {/* CTA pill button: simples, sombra + scale on hover */}
                     <div className="ml-3">
                       <button
                         onClick={() => setLocation(a.href)}
@@ -492,7 +472,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Comunicados recentes */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold text-slate-900">Comunicados Recentes</h2>
@@ -545,40 +524,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Scoped styles & animations */}
       <style>{`
-        /* Respect user preference for reduced motion */
         .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
           animation: none !important;
           transition: none !important;
         }
-
-        /* Background blobs */
         @keyframes blob-slow { 0%,100%{ transform: translate(0,0) scale(1); } 33%{ transform: translate(24px,-30px) scale(1.05);} 66%{ transform: translate(-20px,10px) scale(0.95);} }
         @keyframes blob-mid { 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(12px,-18px) scale(1.03);} }
         .animate-blob-slow { animation: blob-slow 14s ease-in-out infinite; }
         .animate-blob-mid { animation: blob-mid 10s ease-in-out infinite; }
-
-        /* small entrance */
         @keyframes pop-up { from { opacity: 0; transform: translateY(8px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .pop { animation: pop-up 420ms cubic-bezier(.2,.9,.2,1) both; }
-
-        /* tilt fallback */
         .card-tilt { transition: transform 300ms cubic-bezier(.2,.9,.2,1), box-shadow 300ms; transform-origin: center; }
         .card-tilt:hover { transform: translateY(-8px) perspective(800px) rotateX(0.6deg) rotateY(-0.6deg); box-shadow: 0 24px 60px rgba(14,65,255,0.06); }
-
-        /* spin slow */
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 6s linear infinite; }
-
-        /* line clamp fallback */
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
         @media (max-width: 640px) {
           .backdrop-blur-md { backdrop-filter: blur(6px); }
         }
-
-        /* small accessibility helpers */
         article[role="button"] { min-height: 84px; }
       `}</style>
     </div>
