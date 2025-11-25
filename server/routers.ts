@@ -302,17 +302,38 @@ export const appRouter = router({
       .input(z.object({ alunoId: z.string().optional(), periodo: z.string().optional() }).optional())
       .query(async ({ input, ctx }) => {
         const alunoId = input?.alunoId ?? ctx.user.id;
-        const matriculas = await db.getMatriculasByAluno(alunoId);
+        
+        // 1. Buscamos as matrículas (que JÁ trazem os dados da disciplina e professor)
+        const matriculasDoAluno = await db.getMatriculasByAluno(alunoId);
+        
         const resultados: any[] = [];
-        for (const m of (matriculas as any[])) {
-          const disciplinaId = m.matricula?.disciplinaId ?? m.disciplina?.id ?? m.disciplinaId;
+
+        // 2. Para cada matrícula...
+        for (const m of (matriculasDoAluno as any[])) {
+          const disciplinaId = m.matricula?.disciplinaId ?? m.disciplina?.id;
+          
           if (!disciplinaId) continue;
-          const hs = await db.getHorariosByDisciplina(disciplinaId);
-          resultados.push(...(hs || []));
+
+          // 3. Buscamos os horários crus dessa disciplina
+          const horariosDaDisciplina = await db.getHorariosByDisciplina(disciplinaId);
+
+          // 4. O PULO DO GATO: Enriquecemos o horário com os dados da disciplina/professor
+          //    que já temos na variável 'm' (da matrícula).
+          const horariosEnriquecidos = horariosDaDisciplina.map(h => ({
+            horario: h,                 // O objeto horário puro (dia, hora, sala)
+            disciplina: m.disciplina,   // Anexamos o objeto disciplina (nome, código)
+            professor: m.professor,     // Anexamos o objeto professor (nome)
+            
+            // Mantemos compatibilidade com estrutura plana se necessário
+            ...h 
+          }));
+
+          resultados.push(...horariosEnriquecidos);
         }
+
         return resultados;
       }),
-
+      
     // NOVO: compatibilidade com frontend antigo "meusHorarios"
     meusHorarios: protectedProcedure
       .input(z.object({ periodo: z.string().optional() }).optional())

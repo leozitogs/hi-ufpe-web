@@ -5,38 +5,28 @@ import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { and, eq, sql } from "drizzle-orm";
 
-// 👉 importa o schema inteiro como objeto
 import * as schema from "../drizzle/schema";
-// desestrutura as tabelas para facilitar
-const { users, disciplinas, horarios, matriculas } = schema;
 
-// 👉 tipos inferidos direto das tabelas (garante aderência ao seu schema.ts)
+const { users, disciplinas, horarios, matriculas, professores } = schema;
+
 type InsertUser = typeof schema.users.$inferInsert;
 type InsertDisciplina = typeof schema.disciplinas.$inferInsert;
 type InsertHorario = typeof schema.horarios.$inferInsert;
 type InsertMatricula = typeof schema.matriculas.$inferInsert;
+type InsertProfessor = typeof schema.professores.$inferInsert;
 
-// 👉 tipagem do DB p/ mysql2 + seu schema
 import type { MySql2Database } from "drizzle-orm/mysql2";
 type DB = MySql2Database<typeof schema>;
-
-/**
- * Seed aderente ao schema (2025.2 – turno manhã)
- * - Cria/atualiza: admin_cin, aluno_teste1, mock_user_id
- * - Disciplinas: CIN0135, CIN0136, MA026, CIN0134
- * - Horários (manhã) com diaSemana por extenso (ENUM do schema)
- * - Matrícula do mock_user_id nas quatro disciplinas
- *
- * Observações do schema:
- *  - disciplinas NÃO tem 'periodo'; 'periodo' fica em horarios e matriculas
- *  - matriculas usa 'alunoId' (não 'usuarioId')
- *  - horarios.diaSemana é ENUM: "Segunda-feira"..."Sexta-feira"
- */
 
 const PERIODO = "2025.2";
 const MOCK_ID = process.env.OWNER_OPEN_ID || "mock_user_id";
 
-// Map curto → ENUM do schema (por extenso)
+// --- IDs Fixos para Professores (para vincular fácil) ---
+const PROF_KIEV = "prof_kiev";
+const PROF_VINICIUS = "prof_vinicius";
+const PROF_PAULO = "prof_paulo";
+const PROF_SERGIO = "prof_sergio";
+
 const DIA_MAP: Record<string, InsertHorario["diaSemana"]> = {
   seg: "Segunda-feira",
   ter: "Terça-feira",
@@ -46,9 +36,9 @@ const DIA_MAP: Record<string, InsertHorario["diaSemana"]> = {
 };
 
 type Hor = {
-  d: keyof typeof DIA_MAP; // seg/ter/qua/qui/sex
-  ini: string; // "HH:MM"
-  fim: string; // "HH:MM"
+  d: keyof typeof DIA_MAP;
+  ini: string;
+  fim: string;
   sala?: string | null;
 };
 
@@ -56,45 +46,47 @@ type DiscDef = {
   codigo: string;
   nome: string;
   cargaHoraria?: number | null;
+  professorId?: string; // <--- Campo Novo!
   horarios: Hor[];
 };
 
+// --- OFERTA ATUALIZADA COM PROFESSORES ---
 const OFERTA: DiscDef[] = [
-  // CIN0135 — Estruturas de Dados Orientadas a Objetos
   {
     codigo: "CIN0135",
     nome: "ESTRUTURAS DE DADOS ORIENTADAS A OBJETOS",
     cargaHoraria: 60,
+    professorId: PROF_SERGIO,
     horarios: [
       { d: "ter", ini: "08:00", fim: "09:50", sala: "Grad05" },
       { d: "qui", ini: "10:00", fim: "11:50", sala: "CIn" },
     ],
   },
-  // CIN0136 — Desenvolvimento de Software
   {
     codigo: "CIN0136",
     nome: "DESENVOLVIMENTO DE SOFTWARE",
     cargaHoraria: 60,
+    professorId: PROF_VINICIUS,
     horarios: [
       { d: "seg", ini: "08:00", fim: "09:50", sala: "Grad05" },
       { d: "seg", ini: "10:00", fim: "11:50", sala: "CIn" },
     ],
   },
-  // MA026 — Cálculo Diferencial e Integral 1
   {
     codigo: "MA026",
     nome: "CALCULO DIFERENCIAL E INTEGRAL 1",
     cargaHoraria: 60,
+    professorId: PROF_PAULO,
     horarios: [
       { d: "qua", ini: "08:00", fim: "09:50", sala: "CIn" },
       { d: "sex", ini: "10:00", fim: "11:50", sala: "CIn" },
     ],
   },
-  // CIN0134 — Arquitetura de Computadores e SO
   {
     codigo: "CIN0134",
     nome: "ARQUITETURA DE COMPUTADORES E SISTEMAS OPERACIONAIS",
     cargaHoraria: 60,
+    professorId: PROF_KIEV,
     horarios: [
       { d: "qua", ini: "10:00", fim: "11:50", sala: "E112" },
       { d: "sex", ini: "08:00", fim: "09:50", sala: "E233" },
@@ -102,24 +94,17 @@ const OFERTA: DiscDef[] = [
   },
 ];
 
-// ===== helpers ===============================================================
+// ===== helpers =====
 
 async function upsertUser(db: DB, u: InsertUser) {
-  await db
-    .insert(users)
-    .values(u)
-    .onDuplicateKeyUpdate({
-      set: {
-        name: sql`VALUES(name)`,
-        email: sql`VALUES(email)`,
-        loginMethod: sql`VALUES(loginMethod)`,
-        role: sql`VALUES(role)`,
-        matricula: sql`VALUES(matricula)`,
-        curso: sql`VALUES(curso)`,
-        periodo: sql`VALUES(periodo)`,
-        lastSignedIn: sql`NOW()`,
-      },
-    });
+  await db.insert(users).values(u).onDuplicateKeyUpdate({ set: u });
+}
+
+// Helper Novo: Criar Professor
+async function upsertProfessor(db: DB, p: InsertProfessor) {
+  await db.insert(professores).values(p).onDuplicateKeyUpdate({
+    set: { nome: sql`VALUES(nome)`, departamento: sql`VALUES(departamento)` }
+  });
 }
 
 async function getDiscByCodigo(db: DB, codigo: string) {
@@ -139,6 +124,7 @@ async function upsertDisciplina(db: DB, def: DiscDef) {
     codigo: def.codigo,
     nome: def.nome,
     cargaHoraria: def.cargaHoraria ?? null,
+    professorId: def.professorId, // <--- Salvando o vínculo
     oficial: true,
   };
 
@@ -149,13 +135,15 @@ async function upsertDisciplina(db: DB, def: DiscDef) {
       set: {
         nome: sql`VALUES(nome)`,
         cargaHoraria: sql`VALUES(cargaHoraria)`,
+        professorId: sql`VALUES(professorId)`, // <--- Atualiza se já existir
         oficial: sql`VALUES(oficial)`,
         updatedAt: sql`NOW()`,
       },
     });
 
   const discId = (await getDiscByCodigo(db, def.codigo))!;
-  // limpa horários anteriores para simplicidade/idempotência
+  
+  // Limpa horários antigos para evitar duplicidade ao rodar de novo
   await db.delete(horarios).where(eq(horarios.disciplinaId, discId));
 
   for (const h of def.horarios) {
@@ -178,14 +166,11 @@ async function ensureMatricula(db: DB, alunoId: string, disciplinaId: string) {
   const [m] = await db
     .select({ id: matriculas.id })
     .from(matriculas)
-    .where(
-      and(
-        eq(matriculas.alunoId, alunoId),
-        eq(matriculas.disciplinaId, disciplinaId),
-        eq(matriculas.periodo, PERIODO),
-      ),
-    )
-    .limit(1);
+    .where(and(
+      eq(matriculas.alunoId, alunoId),
+      eq(matriculas.disciplinaId, disciplinaId),
+      eq(matriculas.periodo, PERIODO),
+    )).limit(1);
 
   if (m?.id) return m.id;
 
@@ -202,7 +187,7 @@ async function ensureMatricula(db: DB, alunoId: string, disciplinaId: string) {
   return row.id!;
 }
 
-// ===== main ==================================================================
+// ===== main =====
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -211,43 +196,21 @@ async function main() {
     process.exit(1);
   }
 
-  // ✅ use Pool (o driver do drizzle/mysql2 espera Pool)
   const pool = mysql.createPool(url);
-
-  // ✅ tipagem e schema corretos
-  const db: DB = drizzle(url, { schema, mode: "default" });
+  const db: DB = drizzle(pool, { schema, mode: "default" });
 
   try {
-    console.log("🌱 Seed 2025.2 — manhã (CIn)\n");
+    console.log("🌱 Seed 2025.2 — com Professores (CIn)\n");
 
-    // 1) Usuários base
+    // 1. Criar Professores
+    console.log("👨‍🏫 Criando professores...");
+    await upsertProfessor(db, { id: PROF_KIEV, nome: "Kiev Gama", departamento: "CIn", email: "kiev@cin.ufpe.br" });
+    await upsertProfessor(db, { id: PROF_VINICIUS, nome: "Vinícius Garcia", departamento: "CIn", email: "vinicius@cin.ufpe.br" });
+    await upsertProfessor(db, { id: PROF_PAULO, nome: "Paulo Salgado", departamento: "Matemática", email: "paulo@dmat.ufpe.br" });
+    await upsertProfessor(db, { id: PROF_SERGIO, nome: "Sérgio Soares", departamento: "CIn", email: "sergio@cin.ufpe.br" });
+
+    // 2. Usuários
     const now = new Date();
-    await upsertUser(db, {
-      id: "admin_cin",
-      name: "Administrador CIn",
-      email: "admin@cin.ufpe.br",
-      loginMethod: "local",
-      role: "admin",
-      matricula: null,
-      curso: "Ciência da Computação",
-      periodo: "9",
-      createdAt: now,
-      lastSignedIn: now,
-    });
-
-    await upsertUser(db, {
-      id: "aluno_teste1",
-      name: "João Silva",
-      email: "joao@cin.ufpe.br",
-      loginMethod: "local",
-      role: "user",
-      matricula: "20231001",
-      curso: "Ciência da Computação",
-      periodo: "3",
-      createdAt: now,
-      lastSignedIn: now,
-    });
-
     await upsertUser(db, {
       id: MOCK_ID,
       name: "Usuário Mock",
@@ -261,28 +224,26 @@ async function main() {
       lastSignedIn: now,
     });
 
-    // 2) Disciplinas + horários
+    // 3. Disciplinas + Horários
     const ids: Record<string, string> = {};
     for (const def of OFERTA) {
       const id = await upsertDisciplina(db, def);
       ids[def.codigo] = id;
-      console.log(`  • ${def.codigo} – ${def.nome} (id: ${id})`);
+      console.log(`  • ${def.codigo} – ${def.nome} (Prof definido)`);
     }
 
-    // 3) Matrículas do mock
+    // 4. Matrículas
     for (const cod of ["CIN0135", "CIN0136", "MA026", "CIN0134"]) {
-      const id = await ensureMatricula(db, MOCK_ID, ids[cod]);
-      console.log(`  ✓ matrícula garantida: ${MOCK_ID} → ${cod} (id: ${id})`);
+      await ensureMatricula(db, MOCK_ID, ids[cod]);
     }
 
     console.log("\n✅ Seed concluído com sucesso!");
-    console.log("Dica: exporte OWNER_OPEN_ID=mock_user_id antes de testar o chatbot.");
-    process.exit(0);
+    
   } catch (e) {
     console.error("❌ Erro no seed:", e);
     process.exit(1);
   } finally {
-    // nada a fechar quando usa connection string
+    await pool.end();
   }
 }
 
