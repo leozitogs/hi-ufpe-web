@@ -11,7 +11,7 @@ export default function Horarios() {
   const [, setLocation] = useLocation();
   
   const { data: horarios, isLoading } = trpc.horarios.listByAluno.useQuery(
-    { periodo: "2025.1" }, 
+    { periodo: "2025.2" }, 
     { enabled: isAuthenticated }
   );
 

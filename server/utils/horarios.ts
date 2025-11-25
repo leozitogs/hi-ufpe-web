@@ -5,11 +5,9 @@ export type HorarioInput = {
   horaInicio: string;         // "08:00" ou "14:30"
   disciplina: string;
   sala?: string;
-  // Adicione outros campos se necessário para o retorno
   [key: string]: any; 
 };
 
-// Mapa para normalizar dias da semana (Texto DB -> JS Date.getDay())
 const DIAS_PARA_NUMERO: Record<string, number> = {
   "Domingo": 0,
   "Segunda-feira": 1,
@@ -26,14 +24,10 @@ const DIAS_PARA_NUMERO: Record<string, number> = {
 export function horaParaDecimal(hora: string): number {
   if (!hora) return 0;
   const [h, m] = hora.split(':').map(Number);
-  // Se vier "08.30" ou apenas "8", trata adequadamente
   if (isNaN(m)) return parseFloat(hora); 
   return h + (m / 60);
 }
 
-/**
- * Normaliza o dia da semana para 0-6 (Padrão JS)
- */
 export function normalizarDia(dia: string | number): number {
   if (typeof dia === 'number') return dia;
   return DIAS_PARA_NUMERO[dia] ?? -1;

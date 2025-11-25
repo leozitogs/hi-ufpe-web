@@ -49,7 +49,7 @@ export function calcularMediaPonderada(avaliacoes: AvaliacaoData[]): number {
   return Math.round(media * 100) / 100;
 }
 
-// NOVO: Função de Média Simples
+// Função de Média Simples
 export function calcularMediaSimples(avaliacoes: AvaliacaoData[]): number {
   if (!avaliacoes || avaliacoes.length === 0) return 0;
 
@@ -76,7 +76,7 @@ export function calcularProjecao(
   avaliacoesLancadas: AvaliacaoData[], 
   avaliacoesPendentes: AvaliacaoData[], 
   mediaDesejada: number,
-  tipo: 'media_ponderada' | 'media_simples' = 'media_ponderada' // Parâmetro novo
+  tipo: 'media_ponderada' | 'media_simples' = 'media_ponderada'
 ) {
   // Se for média simples, tratamos tudo como peso 1
   const usarPeso1 = tipo === 'media_simples';
@@ -124,7 +124,7 @@ export function simularMediaComNota(
   avaliacoesAtuais: AvaliacaoData[],
   identificadorAvaliacao: string,
   notaSimulada: number,
-  tipo: 'media_ponderada' | 'media_simples' = 'media_ponderada' // Parâmetro novo
+  tipo: 'media_ponderada' | 'media_simples' = 'media_ponderada'
 ): number {
   const avaliacoesSimuladas = avaliacoesAtuais.map(aval => {
     const ehAlvoPorId = aval.id && aval.id === identificadorAvaliacao;
@@ -136,7 +136,6 @@ export function simularMediaComNota(
     return aval;
   });
 
-  // Decide qual cálculo usar baseado no tipo
   if (tipo === 'media_simples') {
     return calcularMediaSimples(avaliacoesSimuladas);
   }

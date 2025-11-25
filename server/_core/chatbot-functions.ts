@@ -2,14 +2,21 @@
  * Funções disponíveis para o chatbot executar via function calling
  */
 
-import * as db from "../db";
-import { eq, and } from "drizzle-orm";
-import { matriculas } from "../../drizzle/schema";
+// REFATORADO: Imports específicos por domínio
+import { getMatriculasByAluno, getMatricula } from "../database/academic/matriculas";
+import { getMetodoAvaliacaoByMatricula } from "../database/academic/avaliacoes";
+import { getAvaliacoesByMetodo, updateAvaliacao } from "../database/academic/avaliacoes";
+import { registrarFalta as dbRegistrarFalta, getFaltasByMatricula } from "../database/academic/faltas"; // Alias para evitar conflito de nome
+import { getHorariosByAluno } from "../database/academic/horarios";
+
 import { simularMediaComNota } from "../utils/calculos"; 
 import { encontrarProximaAula } from "../utils/horarios";
 
 // Definições das funções para a OpenAI
 export const CHATBOT_FUNCTIONS = [
+  // ... (Mantenha o array CHATBOT_FUNCTIONS igual, ele não muda) ...
+  // Para economizar espaço, não vou repetir o array de definições JSON aqui, 
+  // mantenha o que já estava no seu arquivo.
   {
     name: "consultar_media",
     description: "Consulta a média atual do aluno em uma disciplina específica",
@@ -186,8 +193,8 @@ export async function executarFuncao(
 
 export async function consultarMedia(alunoId: string, disciplinaNome: string) {
   try {
-    // Buscar matrícula
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    // REFATORADO: Chamada direta
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -196,8 +203,8 @@ export async function consultarMedia(alunoId: string, disciplinaNome: string) {
       return { error: "Disciplina não encontrada nas suas matrículas" };
     }
     
-    // Buscar método de avaliação e avaliações
-    const metodo = await db.getMetodoAvaliacaoByMatricula(matricula.matricula.id);
+    // REFATORADO
+    const metodo = await getMetodoAvaliacaoByMatricula(matricula.matricula.id);
     if (!metodo) {
       return {
         disciplina: matricula.disciplina.nome,
@@ -207,7 +214,8 @@ export async function consultarMedia(alunoId: string, disciplinaNome: string) {
       };
     }
     
-    const avaliacoes = await db.getAvaliacoesByMetodo(metodo.id);
+    // REFATORADO
+    const avaliacoes = await getAvaliacoesByMetodo(metodo.id);
     
     return {
       disciplina: matricula.disciplina.nome,
@@ -234,8 +242,7 @@ export async function lancarNota(
   nota: number
 ) {
   try {
-    // Buscar matrícula
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -244,13 +251,12 @@ export async function lancarNota(
       return { error: "Disciplina não encontrada" };
     }
     
-    // Buscar método e avaliações
-    const metodo = await db.getMetodoAvaliacaoByMatricula(matricula.matricula.id);
+    const metodo = await getMetodoAvaliacaoByMatricula(matricula.matricula.id);
     if (!metodo) {
       return { error: "Método de avaliação não configurado para esta disciplina" };
     }
     
-    const avaliacoes = await db.getAvaliacoesByMetodo(metodo.id);
+    const avaliacoes = await getAvaliacoesByMetodo(metodo.id);
     const avaliacao = avaliacoes.find((a: any) =>
       a.nome.toLowerCase().includes(avaliacaoNome.toLowerCase())
     );
@@ -259,14 +265,13 @@ export async function lancarNota(
       return { error: `Avaliação '${avaliacaoNome}' não encontrada` };
     }
     
-    // Lançar nota
-    await db.updateAvaliacao(avaliacao.id, {
+    // REFATORADO
+    await updateAvaliacao(avaliacao.id, {
       notaObtida: nota.toString(),
       dataAvaliacao: new Date(),
     });
     
-    // Buscar média atualizada
-    const matriculaAtualizada = await db.getMatricula(matricula.matricula.id);
+    const matriculaAtualizada = await getMatricula(matricula.matricula.id);
     
     return {
       sucesso: true,
@@ -288,8 +293,7 @@ export async function registrarFalta(
   justificativa?: string
 ) {
   try {
-    // Buscar matrícula
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -298,16 +302,15 @@ export async function registrarFalta(
       return { error: "Disciplina não encontrada" };
     }
     
-    // Registrar falta
-    await db.registrarFalta({
+    // REFATORADO
+    await dbRegistrarFalta({
       matriculaId: matricula.matricula.id,
       data: new Date(data),
       justificada: justificada || false,
       justificativa,
     } as any);
     
-    // Buscar matrícula atualizada
-    const matriculaAtualizada = await db.getMatricula(matricula.matricula.id);
+    const matriculaAtualizada = await getMatricula(matricula.matricula.id);
     
     return {
       sucesso: true,
@@ -326,8 +329,7 @@ export async function calcularProjecao(
   mediaDesejada: number
 ) {
   try {
-    // Buscar matrícula e avaliações
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -336,18 +338,17 @@ export async function calcularProjecao(
       return { error: "Disciplina não encontrada" };
     }
     
-    const metodo = await db.getMetodoAvaliacaoByMatricula(matricula.matricula.id);
+    const metodo = await getMetodoAvaliacaoByMatricula(matricula.matricula.id);
     if (!metodo) {
       return { error: "Método de avaliação não configurado" };
     }
     
-    const avaliacoes = await db.getAvaliacoesByMetodo(metodo.id);
+    const avaliacoes = await getAvaliacoesByMetodo(metodo.id);
     
     if (metodo.tipo === "media_simples") {
       return { error: "Projeção de nota não implementada para Média Simples." };
     }
     
-    // Apenas média ponderada é suportada por enquanto
     let somaPesosLancados = 0;
     let somaNotasLancadas = 0;
     let pesoRestante = 0;
@@ -393,8 +394,7 @@ export async function simularNota(
   notaSimulada: number
 ) {
   try {
-    // Buscar matrícula e avaliações
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -403,7 +403,7 @@ export async function simularNota(
       return { error: "Disciplina não encontrada" };
     }
     
-    const metodo = await db.getMetodoAvaliacaoByMatricula(matricula.matricula.id);
+    const metodo = await getMetodoAvaliacaoByMatricula(matricula.matricula.id);
     if (!metodo) {
       return { error: "Método de avaliação não configurado" };
     }
@@ -412,7 +412,7 @@ export async function simularNota(
       return { error: `Simulação de nota suportada apenas para Média Ponderada. Método atual: ${metodo.tipo}` };
     }
     
-    const avaliacoes = await db.getAvaliacoesByMetodo(metodo.id);
+    const avaliacoes = await getAvaliacoesByMetodo(metodo.id);
     const avaliacao = avaliacoes.find((a: any) =>
       a.nome.toLowerCase().includes(avaliacaoNome.toLowerCase())
     );
@@ -421,7 +421,7 @@ export async function simularNota(
       return { error: `Avaliação '${avaliacaoNome}' não encontrada` };
     }
     
-    // === REFATORAÇÃO: Usando a função pura de cálculo ===
+    // === LÓGICA PURA IMPORTADA ===
     const mediaSimulada = simularMediaComNota(avaliacoes, avaliacao.id, notaSimulada);
     
     const mediaAtual = Number(matricula.matricula.mediaCalculada || matricula.matricula.media || 0);
@@ -443,8 +443,7 @@ export async function simularNota(
 
 export async function consultarFaltas(alunoId: string, disciplinaNome: string) {
   try {
-    // Buscar matrícula
-    const matriculasLista = await db.getMatriculasByAluno(alunoId);
+    const matriculasLista = await getMatriculasByAluno(alunoId);
     const matricula = matriculasLista.find((m: any) =>
       m.disciplina.nome.toLowerCase().includes(disciplinaNome.toLowerCase())
     );
@@ -453,7 +452,8 @@ export async function consultarFaltas(alunoId: string, disciplinaNome: string) {
       return { error: "Disciplina não encontrada" };
     }
     
-    const faltas = await db.getFaltasByMatricula(matricula.matricula.id);
+    // REFATORADO
+    const faltas = await getFaltasByMatricula(matricula.matricula.id);
     
     return {
       disciplina: matricula.disciplina.nome,
@@ -471,17 +471,17 @@ export async function consultarFaltas(alunoId: string, disciplinaNome: string) {
   }
 }
 
-export async function consultarProximaAula(alunoId: string, periodo?: string) {
+async function consultarProximaAula(alunoId: string, periodo?: string) {
   const periodoAtual = periodo ?? process.env.PERIODO_ATUAL ?? "2025.2";
 
   try {
-    const horarios = await db.getHorariosByAluno(alunoId, periodoAtual);
+    // REFATORADO
+    const horarios = await getHorariosByAluno(alunoId, periodoAtual);
 
     if (!horarios || horarios.length === 0) {
       return { mensagem: "Você não tem horários cadastrados para o período atual." };
     }
 
-    // Mapear o retorno complexo do banco (JOINs) para o formato simples da nossa util
     const listaFormatada = horarios.map((h: any) => ({
       diaSemana: h.horario.diaSemana,
       horaInicio: h.horario.horaInicio,
@@ -491,21 +491,16 @@ export async function consultarProximaAula(alunoId: string, periodo?: string) {
       professor: h.professor ? h.professor.nome : 'Não informado'
     }));
 
-    // --- LÓGICA PURA AQUI ---
-    // Passamos undefined no 2º parametro para ele usar "new Date()" (agora)
+    // Função pura importada
     const proximaAula = encontrarProximaAula(listaFormatada);
 
     if (!proximaAula) {
       return { mensagem: "Não foi possível encontrar sua próxima aula na grade desta semana." };
     }
 
-    // Mapeia o dia numérico de volta para texto legível se necessário (opcional)
-    // Mas como nosso 'listaFormatada' mantém o diaSemana original do banco, 
-    // se o banco já retorna "Segunda-feira", está pronto.
-    
     return {
       disciplina: proximaAula.disciplina,
-      dia_semana: proximaAula.diaSemana, // O texto original do banco
+      dia_semana: proximaAula.diaSemana,
       hora_inicio: proximaAula.horaInicio,
       hora_fim: proximaAula.horaFim,
       local: proximaAula.local,
@@ -521,7 +516,7 @@ async function consultarSituacaoGeral(alunoId: string, periodo?: string) {
   const periodoAtual = periodo ?? process.env.PERIODO_ATUAL ?? "2025.2";
 
   try {
-    const matriculasLista = await db.getMatriculasByAluno(alunoId, periodoAtual);
+    const matriculasLista = await getMatriculasByAluno(alunoId, periodoAtual);
     
     if (!matriculasLista || matriculasLista.length === 0) {
       return { mensagem: "Você não está matriculado em nenhuma disciplina neste período." };

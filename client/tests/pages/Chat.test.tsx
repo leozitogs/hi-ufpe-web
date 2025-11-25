@@ -76,22 +76,25 @@ describe('Página: Chat (Hi Assistant)', () => {
     render(<Chat />);
 
     const input = screen.getByPlaceholderText(/Digite sua mensagem/i);
-    const botaoEnviar = screen.getByRole('button'); // Busca genérica pois só há um botão
+    
+    // CORREÇÃO: Como agora tem botão de voltar, pegamos todos e selecionamos o último (Enviar)
+    const botoes = screen.getAllByRole('button');
+    const botaoEnviar = botoes[botoes.length - 1];
 
-    // 1. Estado inicial
+    // 1. O botão deve começar desabilitado (input vazio)
     expect(botaoEnviar).toBeDisabled();
 
-    // 2. Interação de digitação
+    // 2. Usuário digita
     fireEvent.change(input, { target: { value: 'Olá bot' } });
     
-    // 3. Validação de estado pós-digitação
+    // 3. Input deve ter o valor e botão deve habilitar
     expect(input).toHaveValue('Olá bot');
     expect(botaoEnviar).not.toBeDisabled();
 
-    // 4. Interação de envio
+    // 4. Usuário clica em enviar
     fireEvent.click(botaoEnviar);
 
-    // 5. Verificação da chamada da função mockada
+    // 5. Verifica se a função de mutação (TRPC) foi chamada com o texto correto
     expect(mockEnviarMensagem).toHaveBeenCalledWith(
       expect.objectContaining({
         mensagem: 'Olá bot'

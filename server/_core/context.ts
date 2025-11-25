@@ -44,7 +44,7 @@ export async function createContext(
     const headerUserId =
       Array.isArray(hdr) ? String(hdr[0] ?? "").trim() : String(hdr).trim();
 
-    const mockId = headerUserId || ENV.ownerId || "mock-user-default";
+    const mockId = headerUserId || ENV.ownerId || "mock_user_id";
 
     if (mockId) {
       const now = new Date();

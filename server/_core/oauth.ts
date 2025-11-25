@@ -1,6 +1,7 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
-import * as db from "../db";
+// REFATORADO: Importação direta do módulo específico
+import { upsertUser } from "../database/users"; 
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -28,7 +29,8 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      await db.upsertUser({
+      // REFATORADO: Uso direto da função importada
+      await upsertUser({
         id: userInfo.openId,
         name: userInfo.name || null,
         email: userInfo.email ?? null,
