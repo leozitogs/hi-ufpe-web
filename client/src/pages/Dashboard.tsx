@@ -32,13 +32,13 @@ import {
   Zap,
   UserCircle,
   PieChart,
-  RefreshCcw
+  RefreshCcw // Ícone de loading
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 
 /* --------------------------
-   Helper: Próxima aula
+   Helper: Próxima aula (CORRIGIDO)
    -------------------------- */
 const calculateNextClass = (horarios: any[] | undefined) => {
   if (!horarios || horarios.length === 0) return "N/A";
@@ -58,14 +58,19 @@ const calculateNextClass = (horarios: any[] | undefined) => {
 
   let nextClass = null;
 
+  // CORREÇÃO: Acessamos h.diaSemana direto, em vez de h.horario.diaSemana
+  // O operador ?. (optional chaining) previne quebras se o dado vier misto
   const aulasHoje = horarios
-    .filter((h: any) => h.horario.diaSemana === diaAtual)
-    .sort((a: any, b: any) =>
-      a.horario.horaInicio.localeCompare(b.horario.horaInicio)
-    );
+    .filter((h: any) => (h.diaSemana || h.horario?.diaSemana) === diaAtual)
+    .sort((a: any, b: any) => {
+      const horaA = a.horaInicio || a.horario?.horaInicio;
+      const horaB = b.horaInicio || b.horario?.horaInicio;
+      return horaA.localeCompare(horaB);
+    });
 
   for (const aula of aulasHoje) {
-    const horaInicioAula = parseInt(aula.horario.horaInicio.replace(":", ""));
+    const horaStr = aula.horaInicio || aula.horario?.horaInicio;
+    const horaInicioAula = parseInt(horaStr.replace(":", ""));
     if (horaInicioAula > horaAtual) {
       nextClass = aula;
       break;
@@ -78,10 +83,12 @@ const calculateNextClass = (horarios: any[] | undefined) => {
       const proximoDia = diasSemana[proximoDiaIndex];
 
       const aulasProximoDia = horarios
-        .filter((h: any) => h.horario.diaSemana === proximoDia)
-        .sort((a: any, b: any) =>
-          a.horario.horaInicio.localeCompare(b.horario.horaInicio)
-        );
+        .filter((h: any) => (h.diaSemana || h.horario?.diaSemana) === proximoDia)
+        .sort((a: any, b: any) => {
+          const horaA = a.horaInicio || a.horario?.horaInicio;
+          const horaB = b.horaInicio || b.horario?.horaInicio;
+          return horaA.localeCompare(horaB);
+        });
 
       if (aulasProximoDia.length > 0) {
         nextClass = aulasProximoDia[0];
@@ -91,7 +98,9 @@ const calculateNextClass = (horarios: any[] | undefined) => {
   }
 
   if (nextClass) {
-    return `${nextClass.horario.horaInicio} • ${nextClass.horario.diaSemana.substring(0, 3)}`;
+    const hora = nextClass.horaInicio || nextClass.horario?.horaInicio;
+    const dia = nextClass.diaSemana || nextClass.horario?.diaSemana;
+    return `${hora} • ${dia.substring(0, 3)}`;
   }
 
   return "N/A";
@@ -131,11 +140,12 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   // queries (sempre no topo)
-  const { data: comunicados } = trpc.comunicados.list.useQuery();
-  const { data: matriculas } = trpc.matriculas.list.useQuery(undefined, {
+  // ADICIONADO: isLoading renomeado para uso no check
+  const { data: comunicados, isLoading: loadingComunicados } = trpc.comunicados.list.useQuery();
+  const { data: matriculas, isLoading: loadingMatriculas } = trpc.matriculas.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
-  const { data: horarios } = trpc.horarios.listByAluno.useQuery(
+  const { data: horarios, isLoading: loadingHorarios } = trpc.horarios.listByAluno.useQuery(
     { alunoId: user?.id || "", periodo: user?.periodo || "2025.1" },
     { enabled: isAuthenticated }
   );
@@ -241,6 +251,16 @@ export default function Dashboard() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // --- NOVO BLOCO DE LOADING (Inserido Corretamente Aqui) ---
+  if (loadingMatriculas || loadingHorarios || loadingComunicados) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-blue-700 bg-gradient-to-br from-blue-50 to-yellow-50">
+        <RefreshCcw className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-lg font-medium">Carregando dados acadêmicos...</p>
       </div>
     );
   }

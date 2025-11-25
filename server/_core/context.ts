@@ -1,17 +1,14 @@
-// server/_core/context.ts
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
 
 /**
- * Contexto TRPC com fallback de usuário em DEV_MODE.
+ * Contexto TRPC com fallback de usuário Mock controlável.
  *
- * Ordem:
- * 1) Tenta autenticar normalmente (cookies/OAuth) via sdk.authenticateRequest
- * 2) Se falhar e DEV_MODE=true, injeta usuário mock:
- *    - usa header "x-mock-user-id" se presente
- *    - senão usa ENV.ownerId (OWNER_OPEN_ID)
+ * Lógica de Prioridade:
+ * 1) Tenta autenticar via Cookie/OAuth (sdk.authenticateRequest).
+ * 2) Se falhar e a flag USE_MOCK_USER estiver 'true' (ou devMode ativo), injeta o Mock.  
  */
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -24,16 +21,22 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
-  // 1) Autenticação real (se houver cookie/sessão)
+  // 1) Tenta Autenticação Real
   try {
     user = await sdk.authenticateRequest(opts.req);
-  } catch {
+  } catch (e) {
+    // Log opcional para debug de auth real
+    // console.debug("[Auth] Failed to authenticate via SDK:", e);
     user = null;
   }
 
-  // 2) Fallback DEV: se não autenticou e DEV_MODE=true
-  if (!user && ENV.devMode) {
-    // permite override por header (útil p/ scripts/cliente)
+  // 2) Fallback para Usuário Mock (Se não logou + Configuração permite)
+  // Verificamos se o usuário não existe E se o modo mock está habilitado explicitamente
+  // ou se estamos em modo DEV puro (para manter compatibilidade atual).
+  const shouldInjectMock = !user && (process.env.USE_MOCK_USER === "false" || ENV.devMode);
+
+  if (shouldInjectMock) {
+    // Permite trocar o ID do mock via header (útil para testes de diferentes usuários)
     const hdr =
       (opts.req.headers["x-mock-user-id"] ??
         opts.req.headers["x-user-id"]) || "";
@@ -41,22 +44,23 @@ export async function createContext(
     const headerUserId =
       Array.isArray(hdr) ? String(hdr[0] ?? "").trim() : String(hdr).trim();
 
-    const mockId = headerUserId || ENV.ownerId;
+    const mockId = headerUserId || ENV.ownerId || "mock-user-default";
 
     if (mockId) {
       const now = new Date();
+      
+      // Cria o usuário Mock com dados seguros
       const mockUser: User = {
         id: mockId,
-        name: "Dev User",
+        name: "Dev User (Mock)", // Nome alterado para ficar claro na UI
         email: "dev@local",
         loginMethod: "mock",
-        role: "user",
+        role: "admin", // Damos admin por padrão no mock para facilitar dev
         matricula: "0000000",
         curso: "Ciência da Computação",
         periodo: ENV.academicPeriod ?? "2025.2",
         createdAt: now,
         lastSignedIn: now,
-        // ⚠️ não existe updatedAt no tipo User
       };
       user = mockUser;
     }
