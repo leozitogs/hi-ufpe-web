@@ -31,7 +31,6 @@ Guia completo para criar e popular o banco de dados MySQL no Windows com os dado
 3. **Verificar instalação:**
    ```powershell
    mysql --version
-   ```
 
 ### Opção B: XAMPP (Mais Fácil)
 
@@ -215,20 +214,22 @@ Após popular o banco, você terá estes usuários:
 
 ### Resetar o Banco de Dados
 
+**Dica:** Pare o servidor (`Ctrl + C`) antes de rodar estes comandos para evitar erros de conexão.
+
 ```powershell
 # Conectar ao MySQL
 mysql -u root -p
 
 # Dropar e recriar
-DROP DATABASE hiufpe;
+DROP DATABASE IF EXISTS hiufpe;
 CREATE DATABASE hiufpe CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
 
 # Recriar tabelas
 pnpm db:push
 
-# Popular novamente
-pnpm tsx scripts/seed-fixed.ts
+# Popular novamente (Script atualizado)
+pnpm tsx scripts/seed-cin-2025-2.ts
 ```
 
 ### Backup do Banco
