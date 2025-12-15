@@ -1,7 +1,7 @@
 # Hi UFPE - Hub Inteligente 🎓
 
-**Versão:** 1.0.0 (10 de Novembro de 2025)
-**Status:** ✅ Pronto para Apresentação (Sprint 3)
+**Versão:** 1.0.4 (15 de Dezembro de 2025)
+**Status:** ✅ Pronto para Apresentação e Deploy (Sprint 5)
 **Repositório:** [github.com/leozitogs/hi-ufpe-web](github.com/leozitogs/hi-ufpe-web)
 
 ## 📋 Sumário Executivo
@@ -121,9 +121,8 @@ Para contribuir com o projeto, consulte o arquivo `CONTRIBUTING.md` para detalhe
 
 1.  **App Mobile** - Versão nativa para iOS e Android.
 2.  **Notificações Push** - Alertas em tempo real.
-3.  **OAuth UFPE** - Login com credenciais da universidade.
-4.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
-5.  **Gamificação** - Badges e conquistas.
+3.  **Análise de Desempenho** - Gráficos e estatísticas avançadas.
+4.  **Gamificação** - Badges relevantes e conquistas motivadoras.
 
 ---
 
@@ -133,32 +132,37 @@ Este guia contém informações técnicas detalhadas para desenvolvedores que de
 
 ---
 
-## Stack Tecnológico
+## 🛠️ Stack Tecnológico
 
 ### Frontend
-- **React 19** + **TypeScript** - Interface tipada
-- **Tailwind CSS 4** - Estilização utilitária
-- **shadcn/ui** - Componentes reutilizáveis
-- **Wouter** - Roteamento leve
-- **React Query** - Gestão de cache/estado
-- **Vite** - Build rápido
+- **React 18+** & **TypeScript** - Biblioteca de UI e tipagem
+- **Tailwind CSS 3** - Estilização utilitária
+- **shadcn/ui** - Componentes de interface reutilizáveis
+- **Wouter** - Roteamento leve e performático
+- **TanStack Query (React Query)** - Gestão de estado assíncrono e cache
+- **Lucide React** - Biblioteca de ícones
+- **date-fns** - Manipulação e formatação de datas
+- **Vite** - Build tool e bundler rápido
 
 ### Backend
-- **Node.js + Express** - Servidor
-- **tRPC 11** - APIs type-safe
-- **Drizzle ORM** - Type-safe database queries
-- **MySQL/TiDB** - Banco de dados relacional
+- **Node.js** - Ambiente de execução
+- **Express** - Framework web
+- **tRPC v11** - API type-safe end-to-end
+- **Zod** - Validação de schemas e inferência de tipos
+- **Drizzle ORM** - Queries type-safe e performáticas
+- **MySQL / TiDB Cloud** - Banco de dados relacional
 
 ### IA & Integrações
-- **OpenAI ChatGPT (GPT-4o-mini)** - Chatbot com Function Calling
-- **AWS S3** - Armazenamento de arquivos
-- **OAuth** - Autenticação
+- **OpenAI API (GPT-4o-mini)** - Chatbot com *Function Calling*
+- **AWS S3** - Armazenamento de arquivos (Uploads)
+- **Google OAuth** - Autenticação social
 
-### DevOps & Quality
-- **TypeScript** - Type-checking
-- **Prettier** - Formatação de código
-- **Vitest** - Testes unitários
-- **Drizzle Kit** - Migrações de banco
+### DevOps & Qualidade
+- **TypeScript** - Verificação estática estrita
+- **Vitest** - Testes unitários e de integração
+- **Drizzle Kit** - Gestão e migração de banco de dados
+- **SonarLint** - Análise estática de código e métricas de qualidade
+- **Prettier** - Padronização e formatação de código
 
 ---
 
@@ -169,63 +173,76 @@ Consulte relatorio_hi_ufpe.md para detalhes completos. Aqui está um resumo:
 ```
 hi-ufpe-web/
 ├── client/                           # Frontend (React)
-│   ├── index.html                   # Entrada HTML
-│   ├── public/                      # Assets estáticos
+│   ├── index.html                    # Entrada HTML
+│   ├── public/                       # Assets estáticos
 │   └── src/
-│       ├── App.tsx                  # Componente raiz
-│       ├── main.tsx                 # Ponto de entrada
-│       ├── index.css                # Estilos globais
-│       ├── components/              # Componentes reutilizáveis
-│       ├── contexts/                # Context API (ThemeContext, etc)
-│       ├── pages/                   # Páginas (Dashboard, Chat, etc)
-│       ├── lib/                     # Utilitários (tRPC client, hooks)
-│       └── hooks/                   # Custom React hooks
+│       ├── _core/                    # Lógica core interna do cliente
+│       ├── components/               # Componentes visuais (shadcn/ui + custom)
+│       ├── contexts/                 # Context API (ThemeContext, Auth)
+│       ├── hooks/                    # Custom React hooks
+│       ├── lib/                      # Bibliotecas e utilitários (tRPC, Auth, Query)
+│       ├── pages/                    # Páginas da aplicação (Roteamento)
+│       ├── tests/                    # Suíte de Testes (Vitest)
+│       │   ├── components/           # Testes de componentes
+│       │   ├── hooks/                # Testes de hooks
+│       │   ├── pages/                # Testes de páginas
+│       │   ├── unit/                 # Testes unitários gerais
+│       │   └── setup.ts              # Configuração do ambiente de teste
+│       ├── App.tsx                   # Componente raiz
+│       ├── main.tsx                  # Ponto de entrada (Bootstrap)
+│       └── const.ts                  # Constantes do frontend
 │
 ├── server/                           # Backend (Node.js + tRPC)
-│   ├── routers.ts                   # Rotas tRPC principais
-│   ├── chat.router.ts               # Rotas do chatbot
-│   ├── db.ts                        # Queries do banco de dados
-│   ├── storage.ts                   # Integração com S3
-│   └── _core/
-│       ├── index.ts                 # Inicialização
-│       ├── trpc.ts                  # Configuração tRPC
-│       ├── env.ts                   # Variáveis de ambiente
-│       ├── cookies.ts               # Gestão de cookies
-│       ├── oauth.ts                 # Autenticação OAuth
-│       ├── llm.ts                   # Integração com ChatGPT
-│       ├── chatbot-functions.ts     # Function Calling do IA
-│       ├── systemRouter.ts          # Rotas do sistema
-│       ├── vite.ts                  # Setup Vite
-│       ├── context.ts               # Contexto tRPC
-│       └── sdk.ts                   # SDK do banco de dados
+│   ├── _core/                        # Núcleo do sistema
+│   │   ├── types/                    # Definições de tipos (Cookies, etc)
+│   │   ├── chatbot-functions.ts      # Function Calling da IA
+│   │   ├── context.ts                # Contexto das requisições
+│   │   ├── llm.ts                    # Integração com OpenAI (ChatGPT)
+│   │   ├── oauth.ts                  # Autenticação OAuth
+│   │   └── trpc.ts                   # Configuração do tRPC
+│   ├── database/                     # Camada de Acesso a Dados (DAL)
+│   │   ├── academic/                 # Queries acadêmicas (notas, turmas)
+│   │   ├── communication/            # Queries de chat e avisos
+│   │   ├── system/                   # Queries de sistema
+│   │   ├── users/                    # Queries de usuários
+│   │   └── connection.ts             # Conexão com o Banco (Drizzle)
+│   ├── tests/                        # Testes de integração/unitários do back
+│   ├── utils/                        # Regras de Negócio Puras
+│   │   ├── calculos.ts               # Algoritmos de média e aprovação
+│   │   └── horarios.ts               # Lógica de grade horária
+│   ├── routers.ts                    # Roteador Principal tRPC
+│   └── storage.ts                    # Serviço de Upload (S3)
 │
-├── drizzle/                          # Migrações e Schema
-│   ├── schema.ts                    # Definição das tabelas
-│   ├── relations.ts                 # Relacionamentos entre tabelas
-│   ├── 000*.sql                     # Arquivos de migração
-│   └── meta/                        # Snapshots das migrações
+├── drizzle/                          # Migrações e Schema do Banco
+│   ├── migrations/                   # Arquivos .sql gerados
+│   ├── meta/                         # Metadados do Drizzle
+│   ├── relations.ts                  # Relacionamentos entre tabelas
+│   └── schema.ts                     # Definição das tabelas
 │
-├── scripts/                          # Scripts utilitários
-│   ├── seed-fixed.ts                # Popula banco com dados
-│   ├── check_enrollments.ts         # Verifica matrículas
-│   └── test_chatbot.ts              # Testa chatbot
+├── scripts/                          # Scripts de Automação
+│   ├── check_enrollments.ts          # Auditoria de matrículas
+│   ├── seed-fixed.ts                 # Popula banco com dados iniciais
+│   └── test_chatbot.ts               # Teste isolado do bot
 │
-├── shared/                           # Código compartilhado
-│   ├── types.ts                     # Tipos TypeScript
-│   └── const.ts                     # Constantes
+├── shared/                           # Código Isomórfico (Front + Back)
+│   ├── _core/                        # Tratamento de erros
+│   ├── const.ts                      # Constantes compartilhadas (Cookies, URLs)
+│   └── types.ts                      # Tipos TypeScript compartilhados
 │
-├── patches/                          # Patches de dependências
+├── patches/                          # Correções em dependências (pnpm patch)
 │
-├── .env.example                      # Template de .env
-├── .gitignore                        # Arquivos ignorados
-├── package.json                      # Dependências do projeto
-├── pnpm-lock.yaml                   # Lock de dependências
-├── tsconfig.json                    # Configuração TypeScript
-├── vite.config.ts                   # Configuração Vite
-├── drizzle.config.ts                # Configuração Drizzle
-├── README.md                         # Documentação principal
-├── SETUP_BANCO_LOCAL.md             # Setup do MySQL
-└── contributing.md                  # Guia de contribuição
+├── .env.example                      # Template de variáveis de ambiente
+├── .gitignore                        # Arquivos ignorados pelo Git
+├── components.json                   # Configuração do shadcn/ui
+├── contributing.md                   # Guia de contribuição
+├── drizzle.config.ts                 # Configuração do Drizzle Kit
+├── package.json                      # Dependências e scripts do projeto
+├── pnpm-lock.yaml                    # Lockfile de versões (pnpm)
+├── README.md                         # Documentação do projeto
+├── tsconfig.json                     # Configuração TypeScript
+├── vercel.json                       # Configuração de Deploy
+├── vite.config.ts                    # Configuração do Vite (Build)
+└── vitest.config.ts                  # Configuração dos Testes (Vitest)
 ```
 
 ---
@@ -238,28 +255,28 @@ O projeto segue uma arquitetura moderna e *full-stack*, utilizando o conceito de
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (React)                      │
-│  ├─ Páginas (Dashboard, Chat, Disciplinas, Admin)          │
-│  ├─ Componentes (shadcn/ui + custom)                       │
-│  └─ Estado (React Query + Context)                         │
+│                         Frontend (React)                    │
+│  ├─ Páginas (Dashboard, Chat, Disciplinas, Admin)           │
+│  ├─ Componentes (shadcn/ui + custom)                        │
+│  └─ Estado (TanStack Query + Context)                       │
 └────────────────┬────────────────────────────────────────────┘
                  │ tRPC (type-safe API calls)
                  ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                     Backend (Node.js)                        │
-│  ├─ Routers (tRPC endpoints)                               │
-│  ├─ chat.router.ts (Chatbot Logic)                         │
-│  ├─ routers.ts (Main routes)                               │
-│  └─ _core/ (Business logic, OAuth, LLM)                   │
+│                        Backend (Node.js)                    │
+│  ├─ Routers Modularizados (server/routers/*.ts)             │
+│  │   └─ auth, chat, disciplinas, matriculas...              │
+│  ├─ Business Logic (server/utils & server/_core)            │
+│  └─ Data Access Layer (server/database/*.ts)                │
 └────────────────┬────────────────────────────────────────────┘
-                 │ Drizzle ORM
+                 │ Drizzle ORM (Queries Tipadas)
                  ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                   MySQL Database                             │
-│  ├─ users, disciplinas, professores                        │
-│  ├─ horarios, matriculas, avaliacoes                       │
-│  ├─ registro_faltas, comunicados                           │
-│  └─ conversas, mensagens                                   │
+│                       MySQL Database                        │
+│  ├─ users, disciplinas, professores                         │
+│  ├─ horarios, matriculas, avaliacoes                        │
+│  ├─ registro_faltas, comunicados                            │
+│  └─ conversas, mensagens                                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -293,10 +310,10 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
 
 ### Pré-requisitos
 
-*   **Node.js** (v18+)
-*   **pnpm**
-*   **Git**
-*   **MySQL** (para ambiente local, pode ser via MySQL Community Server ou XAMPP)
+* **Node.js** (v18+)
+* **pnpm**
+* **Git**
+* **MySQL** (para ambiente local, pode ser via MySQL Community Server ou XAMPP)
 
 ### Guia de Instalação Local
 
@@ -307,18 +324,18 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
 
 2.  **Clonar e Instalar Dependências:**
     ```bash
-    git clone https://github.com/leozitogs/hi-ufpe-web.git
+    git clone [https://github.com/leozitogs/hi-ufpe-web.git](https://github.com/leozitogs/hi-ufpe-web.git)
     cd hi-ufpe-web
     pnpm install
     ```
 
 3.  **Configurar Banco de Dados Local (MySQL):**
-    *   Crie um banco de dados chamado `hiufpe` (via MySQL CLI ou phpMyAdmin).
-    *   Crie o arquivo `.env` na raiz do projeto com a string de conexão, por exemplo: `DATABASE_URL=mysql://root:root123@localhost:3306/hiufpe`.
-    *   **Usuários de Teste:** O projeto pode ser testado com usuários de exemplo após o `seed` (ex: `admin@ufpe.br` / `admin123`).
+    * Crie um banco de dados chamado `hiufpe` (via MySQL CLI ou phpMyAdmin).
+    * Crie o arquivo `.env` na raiz do projeto com a string de conexão, por exemplo: `DATABASE_URL=mysql://root:root123@localhost:3306/hiufpe`.
+    * **Usuários de Teste:** O projeto pode ser testado com usuários de exemplo após o `seed` (ex: `admin@ufpe.br` / `admin123`).
 
 4.  **Inicializar Banco de Dados (Drizzle ORM):**
-    *   **Comandos Drizzle para Gestão do Schema:**
+    * **Comandos Drizzle para Gestão do Schema:**
 
     | Comando | Função |
     | :--- | :--- |
@@ -326,7 +343,7 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
     | `pnpm drizzle-kit migrate` | Aplica as *migrations* geradas no banco de dados. **Recomendado para ambientes de produção.** |
     | `pnpm db:push` | Aplica o schema Drizzle diretamente no banco de dados. **Recomendado para desenvolvimento local.** |
 
-    *   **Execução:**
+    * **Execução:**
     ```bash
     # 1. Aplicar schema (cria as tabelas)
     pnpm db:push
@@ -339,37 +356,41 @@ Este guia é essencial para replicar o ambiente de desenvolvimento localmente e 
     ```bash
     pnpm dev
     ```
-    *   **Frontend:** `http://localhost:5173`
-    *   **Backend:** `http://localhost:3000`
+    * **Frontend:** `http://localhost:5173`
+    * **Backend:** `http://localhost:3000`
 
 
 ### Schema com Drizzle ORM
 
-O schema está definido em schema.ts:
+O schema está definido em `drizzle/schema.ts`, utilizando a sintaxe `mysql-core`:
 
-````typescript
+```typescript
+import { mysqlTable, int, varchar, timestamp } from "drizzle-orm/mysql-core";
+
 // Exemplo simplificado
-export const users = createTable('users', {
-  id: integer().primaryKey().autoincrement(),
-  email: varchar({ length: 255 }).unique(),
-  name: varchar({ length: 255 }),
-  createdAt: timestamp().defaultNow(),
+export const users = mysqlTable('users', {
+  id: int('id').primaryKey().autoincrement(),
+  email: varchar('email', { length: 255 }).unique(),
+  name: varchar('name', { length: 255 }),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const disciplinas = createTable('disciplinas', {
-  id: integer().primaryKey().autoincrement(),
-  codigo: varchar({ length: 50 }).unique(),
-  nome: varchar({ length: 255 }),
-  creditos: integer(),
-  userId: integer().references(() => users.id),
+export const disciplinas = mysqlTable('disciplinas', {
+  id: int('id').primaryKey().autoincrement(),
+  codigo: varchar('codigo', { length: 50 }),
+  nome: varchar('nome', { length: 255 }),
+  creditos: int('creditos'),
+  userId: int('user_id').references(() => users.id),
 });
-````
 
 ### Relacionamentos
 
-Definidos em relations.ts:
+Definidos em drizzle/relations.ts para facilitar queries aninhadas (Join):
 
 ````typescript
+import { relations } from "drizzle-orm";
+import { users, disciplinas, matriculas, horarios, avaliacoes } from "./schema";
+
 export const usersRelations = relations(users, ({ many }) => ({
   disciplinas: many(disciplinas),
   matriculas: many(matriculas),
@@ -387,25 +408,25 @@ export const disciplinasRelations = relations(disciplinas, ({ many, one }) => ({
 
 ### Migrations
 
-Quando alterar o schema:
+Quando alterar o schema (`drizzle/schema.ts`):
 
 ```bash
-# 1. Gerar migração
+# 1. Gerar arquivo de migração SQL
 pnpm drizzle-kit generate
 
-# 2. Revisar arquivo em drizzle/000X_*.sql
+# 2. Revisar o arquivo criado em drizzle/migrations/000X_*.sql
 
-# 3. Aplicar no banco
+# 3. Aplicar as mudanças no banco de dados
 pnpm db:push
 ```
 
 ### Queries com Drizzle
 
-No db.ts:
+No projeto, as queries são modularizadas em server/database/. Um exemplo de como a sintaxe funciona:
 
 ````typescript
-import { db } from './db';
-import { disciplinas, users } from '../drizzle/schema';
+import { db } from '../server/database/connection';
+import { disciplinas } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 // SELECT
@@ -440,23 +461,25 @@ await db
 
 | Comando | Descrição |
 | :--- | :--- |
+| `pnpm install` | **Instala as dependências** do projeto (executar primeiro). |
+| `pnpm start` | Inicia o servidor de desenvolvimento (frontend e backend). |
 | `pnpm dev` | Inicia o servidor de desenvolvimento (frontend e backend). |
 | `pnpm build` | Gera a *build* de produção. |
-| `pnpm db:push` | Aplica o schema Drizzle no banco de dados. |
-| `pnpm db:studio` | Abre a interface visual do Drizzle para o banco de dados. |
-| `pnpm tsx scripts/seed.ts` | Popula o banco com dados de exemplo. |
-| `pnpm check` | Verifica erros de tipagem (TypeScript/tRPC). |
-| `pnpm drizzle-kit generate` | **Gera a migration** a partir do schema. |
-| `pnpm drizzle-kit migrate` | **Aplica a migration** no banco de dados. |
+| `pnpm db:push` | Sincroniza o schema do Drizzle com o banco de dados. |
+| `pnpm db:studio` | Abre o painel visual do Drizzle para explorar os dados. |
+| `pnpm tsx scripts/seed-fixed.ts` | Popula o banco com dados de exemplo. |
+| `pnpm check` | Executa a verificação de tipos em todo o projeto. |
+| `pnpm drizzle-kit generate` | **Gera a migration** baseada nas mudanças do schema. |
+| `pnpm drizzle-kit migrate` | **Aplica a migration** pendentes no banco. |
 
 ---
 
 ### Checklist de Qualidade (Pré-Integração)
 
-1.  **Funcionalidade Verificada:** A nova funcionalidade implementada funciona corretamente.
-2.  **Estabilidade do Projeto:** Outras partes do projeto que interagem com o novo código estão estáveis.
-3.  **Teste de Ponta a Ponta (E2E):** Uso do aplicativo para confirmar que as integrações entre Frontend e Backend estão OK.
-4.  **Tipagem Limpa:** Execução de `pnpm check` para garantir a integridade do *type-safe*.
+1.  **Funcionalidade Verificada:** A nova funcionalidade implementada funciona corretamente e atende aos requisitos.
+2.  **Estabilidade do Projeto:** O código novo não quebrou funcionalidades existentes (regressão).
+3.  **Teste de Ponta a Ponta (E2E):** Navegação manual pelo aplicativo confirmando que Frontend e Backend conversam sem erros.
+4.  **Tipagem Limpa:** Execução bem-sucedida do comando `pnpm check` (sem erros de TypeScript).
 
 ---
 
