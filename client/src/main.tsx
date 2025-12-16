@@ -40,7 +40,9 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "https://hi-ufpe.onrender.com/api/trpc",
+      // [CORREÇÃO FINAL] Usar caminho relativo.
+      // Funciona automaticamente quando Front e Back estão no mesmo domínio.
+      url: "/api/trpc", 
       
       transformer: superjson,
       fetch(input, init) {
