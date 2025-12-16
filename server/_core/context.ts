@@ -2,13 +2,15 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
+import { COOKIE_NAME } from "@shared/const"; // [NOVO] Necessário para mapear o token
 
 /**
  * Contexto TRPC com fallback de usuário Mock controlável.
  *
  * Lógica de Prioridade:
- * 1) Tenta autenticar via Cookie/OAuth (sdk.authenticateRequest).
- * 2) Se falhar e a flag USE_MOCK_USER estiver 'true' (ou devMode ativo), injeta o Mock.  
+ * 1) Verifica Header Authorization (Bearer Token) e injeta como cookie se existir.
+ * 2) Tenta autenticar via Cookie/OAuth (sdk.authenticateRequest).
+ * 3) Se falhar e a flag USE_MOCK_USER estiver 'true' (ou devMode ativo), injeta o Mock.  
  */
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -21,7 +23,23 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
-  // 1) Tenta Autenticação Real
+  // [NOVO] PASSO 1 DA MIGRAÇÃO: Suporte a Token via Header
+  // Verifica se o frontend enviou "Authorization: Bearer <token>"
+  const authHeader = opts.req.headers.authorization;
+  if (authHeader) {
+    const parts = authHeader.split(" ");
+    if (parts.length === 2 && parts[0] === "Bearer") {
+      const token = parts[1];
+      
+      // Injeta o token nos cookies da requisição.
+      // Assim, o sdk.authenticateRequest abaixo vai ler esse token e validá-lo
+      // achando que veio de um cookie, sem precisarmos alterar o SDK.
+      opts.req.cookies = opts.req.cookies || {};
+      opts.req.cookies[COOKIE_NAME] = token;
+    }
+  }
+
+  // 1) Tenta Autenticação Real (Agora funciona com Cookie OU Header)
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (e) {
@@ -31,7 +49,8 @@ export async function createContext(
   }
 
   // 2) Fallback para Usuário Mock (Se não logou + Configuração permite)
-  const shouldInjectMock = !user && (process.env.USE_MOCK_USER === "false" || ENV.devMode);
+  // Nota: USE_MOCK_USER="false" desabilita o mock explicitamente
+  const shouldInjectMock = !user && (process.env.USE_MOCK_USER === "true" || (ENV.devMode && process.env.USE_MOCK_USER !== "false"));
 
   if (shouldInjectMock) {
     // Permite trocar o ID do mock via header (útil para testes de diferentes usuários)
@@ -52,7 +71,7 @@ export async function createContext(
         id: mockId,
         name: "Dev User (Mock)",
         email: "dev@local",
-        password: null, // [CORREÇÃO] Adicionado para satisfazer o Schema atualizado
+        password: null, 
         loginMethod: "mock",
         role: "admin",
         matricula: "0000000",

@@ -42,14 +42,24 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-// URL COMPLETA do Backend
-      url: "https://hi-ufpe.onrender.com/api/trpc", 
+      url: "https://hi-ufpe.onrender.com/api/trpc", // URL Absoluta (MANTENHA)
       
       transformer: superjson,
+
+      // [MUDANÇA AQUI] Configurar os headers dinamicamente
+      headers() {
+        const token = localStorage.getItem("auth_token");
+        return {
+          // Se tiver token, manda no padrão Bearer. Se não, manda objeto vazio.
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
+      },
+
+      // Pode manter o credentials include se quiser, mas o Header é quem vai salvar o dia
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: "include", // Importante para enviar o cookie
+          credentials: "include", 
         });
       },
     }),

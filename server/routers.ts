@@ -70,7 +70,17 @@ export const appRouter = router({
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
 
-        return { success: true };
+        // [MUDANÇA CRÍTICA] Retornamos o token explicitamente
+        // Isso permite que o Frontend salve no localStorage e contorne o bloqueio de cookies
+        return { 
+          success: true,
+          token: token,
+          user: {
+            id: user.id,
+            name: user.name,
+            role: user.role
+          }
+        };
       }),
 
     // --- ROTA DE CADASTRO ---

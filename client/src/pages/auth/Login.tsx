@@ -10,14 +10,20 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
-      // [CORREÇÃO] Redirecionar para o Dashboard, não para a Home "/"
-      window.location.href = "/dashboard"; 
-    },
-    onError: (err) => {
-      setError(err.message);
+  onSuccess: (data) => {
+    // [NOVO] Salvar o token recebido no LocalStorage
+    // 'data' é o que retornamos no Passo 2
+    if (data.token) {
+      localStorage.setItem("auth_token", data.token);
     }
-  });
+
+    // Agora sim redireciona (e o token já estará salvo)
+    window.location.href = "/dashboard";
+  },
+  onError: (err) => {
+    setError(err.message);
+  }
+});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
