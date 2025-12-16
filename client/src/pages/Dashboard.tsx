@@ -231,9 +231,12 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
-              <a href={getLoginUrl()}>Fazer Login</a>
-            </Button>
+            <Button 
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300"
+  onClick={() => setLocation("/app-auth")}
+>
+  Fazer Login
+</Button>
           </CardContent>
         </Card>
       </div>
