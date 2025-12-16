@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors"; // [NOVO] Importação do CORS
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -14,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function isPortAvailable(port: number ): Promise<boolean> {
+function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
     server.listen(port, () => {
@@ -36,9 +37,25 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // [NOVO] Configuração do CORS - Crítico para deploy separado
+  // Isso permite que o seu Frontend converse com o Backend
+  app.use(cors({
+    origin: [
+      "http://localhost:5173",                      // Seu ambiente local
+      "https://hi-ufpe-web-1vms.onrender.com",      // Seu Frontend no Render (Copiado do seu print)
+      process.env.ALLOWED_ORIGIN || ""              // Flexibilidade via env var
+    ].filter(Boolean),
+    credentials: true, // Permite envio de Cookies/Sessão entre domínios
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
+  }));
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
   registerOAuthRoutes(app);
+  
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -57,6 +74,8 @@ async function startServer() {
 
     const SERVE_CLIENT = process.env.SERVE_CLIENT === "true";
 
+    // Nota: Em deploy separado (Frontend no Static Site do Render), 
+    // o SERVE_CLIENT geralmente é false, mas mantemos a lógica caso queira servir tudo junto.
     if (SERVE_CLIENT || hasClientBuild) {
       console.log("Servindo client build de:", clientDist);
       app.use(express.static(clientDist));
@@ -66,7 +85,7 @@ async function startServer() {
         return next();
       });
     } else {
-      console.log("[Static] Nenhum build do client encontrado. Rode o Vite (client) para o front.");
+      console.log("[Static] Modo API-Only ou nenhum build encontrado.");
     }
   }
 
@@ -78,7 +97,7 @@ async function startServer() {
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/` );
+    console.log(`Server running on http://localhost:${port}/`);
   });
 }
 
