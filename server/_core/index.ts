@@ -44,12 +44,11 @@ async function startServer() {
 
   // [CRÍTICO PARA RENDER] Diz ao Express que ele está atrás de um Proxy (Load Balancer)
   // Sem isso, cookies 'Secure' não funcionam.
-  app.set("trust proxy", true);
+  app.set("trust proxy", 1);
 
   app.use(cors({
-    // Sua URL do Frontend (sem barra no final)
-    origin: ["https://hi-ufpe-web-1vms.onrender.com", "http://localhost:5173"],
-    credentials: true, // Permite cookies
+    origin: "https://hi-ufpe-web-1vms.onrender.com", // String única, sem array
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
   }));
@@ -67,6 +66,7 @@ async function startServer() {
       secure: true, // [IMPORTANTE] Força HTTPS sempre (necessário para SameSite: None)
       sameSite: 'none', // [IMPORTANTE] Permite cookie entre domínios diferentes
       httpOnly: true,
+      partitioned: true,
       maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
     }
   }));
