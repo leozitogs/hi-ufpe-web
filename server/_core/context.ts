@@ -31,8 +31,6 @@ export async function createContext(
   }
 
   // 2) Fallback para Usuário Mock (Se não logou + Configuração permite)
-  // Verificamos se o usuário não existe E se o modo mock está habilitado explicitamente
-  // ou se estamos em modo DEV puro (para manter compatibilidade atual).
   const shouldInjectMock = !user && (process.env.USE_MOCK_USER === "false" || ENV.devMode);
 
   if (shouldInjectMock) {
@@ -52,10 +50,11 @@ export async function createContext(
       // Cria o usuário Mock com dados seguros
       const mockUser: User = {
         id: mockId,
-        name: "Dev User (Mock)", // Nome alterado para ficar claro na UI
+        name: "Dev User (Mock)",
         email: "dev@local",
+        password: null, // [CORREÇÃO] Adicionado para satisfazer o Schema atualizado
         loginMethod: "mock",
-        role: "admin", // Damos admin por padrão no mock para facilitar dev
+        role: "admin",
         matricula: "0000000",
         curso: "Ciência da Computação",
         periodo: ENV.academicPeriod ?? "2025.2",

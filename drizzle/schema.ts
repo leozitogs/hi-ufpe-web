@@ -10,6 +10,7 @@ export const users = mysqlTable("users", {
   id: varchar("id", { length: 64 }).primaryKey(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  password: text("password"),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "professor", "secgrad"]).default("user").notNull(),
   matricula: varchar("matricula", { length: 20 }), // Matrícula do aluno

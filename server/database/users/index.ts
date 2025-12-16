@@ -60,3 +60,23 @@ export async function getUser(id: string) {
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
 }
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  // Busca usuário pelo email para validação
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function createUser(userData: InsertUser) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  
+  if (!userData.id) throw new Error("User ID is required for creation");
+
+  // Insere o novo usuário
+  // NOTA: Certifique-se que sua tabela 'users' no schema.ts tem a coluna 'password'
+  await db.insert(users).values(userData);
+  return userData;
+}

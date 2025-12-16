@@ -1,3 +1,5 @@
+import * as UsersDB from "./database/users"; 
+import jwt from "jsonwebtoken"; 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -5,9 +7,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
-import { storagePut } from "./storage";
 
-// --- REFATORADO: Imports Modulares ---
+// Imports Modulares
 import * as DisciplinasDB from "./database/academic/disciplinas";
 import * as MatriculasDB from "./database/academic/matriculas";
 import * as MetodosDB from "./database/academic/avaliacoes";
@@ -19,7 +20,7 @@ import * as ChatDB from "./database/communication/chatbot";
 
 import * as crypto from "crypto";
 import { getChatbotFunctions, ChatbotFunctionEntry } from "./_core/chatbot-functions";
-import { Tool as OpenAITool, Message, Role } from "./_core/llm";
+import { Tool as OpenAITool, Message } from "./_core/llm";
 
 // Procedure para admin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -35,11 +36,76 @@ export const appRouter = router({
   // ===== AUTH =====
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    // --- ROTA DE LOGIN ---
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string()
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = await UsersDB.getUserByEmail(input.email);
+
+        // Verifica senha (texto plano por enquanto)
+        // Agora o TS reconhece 'user.password' porque atualizamos o schema
+        if (!user || user.password !== input.password) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Email ou senha incorretos' });
+        }
+
+        const secret = process.env.JWT_SECRET || "segredo-local-super-secreto-dev-123";
+        
+        // Gera o token
+        const token = jwt.sign(
+          { userId: user.id, role: user.role }, 
+          secret, 
+          { expiresIn: '7d' }
+        );
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+
+        return { success: true };
+      }),
+
+    // --- ROTA DE CADASTRO ---
+    register: publicProcedure
+      .input(z.object({
+        email: z.string().email("Email inválido"),
+        password: z.string().min(6, "Mínimo 6 caracteres"),
+        confirmPassword: z.string()
+      }))
+      .mutation(async ({ input }) => {
+        const { email, password, confirmPassword } = input;
+
+        if (password !== confirmPassword) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: "Senhas não conferem" });
+        }
+
+        const existing = await UsersDB.getUserByEmail(email);
+        if (existing) {
+          throw new TRPCError({ code: 'CONFLICT', message: "Email já cadastrado" });
+        }
+
+        await UsersDB.createUser({
+          id: crypto.randomUUID(),
+          email,
+          password, 
+          name: email.split("@")[0],
+          loginMethod: "email",
+          role: "user", // FIX: Alterado de "student" para "user" (padrão do schema)
+          createdAt: new Date(),
+          matricula: "",
+          curso: ""      
+        });
+
+        return { success: true, message: "Conta criada!" };
+      }),
   }),
 
   // ===== DISCIPLINAS =====
@@ -106,7 +172,8 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         const alunoId = input?.alunoId ?? ctx.user.id;
         const matriculas = await MatriculasDB.getMatriculasByAluno(alunoId);
-
+        
+        // Conversão necessária pois getMatriculasByAluno retorna um tipo complexo de join
         const matriculasAny = matriculas as any[];
 
         if (input?.periodo) {
@@ -299,7 +366,6 @@ export const appRouter = router({
       .input(z.object({ alunoId: z.string().optional(), periodo: z.string().optional() }).optional())
       .query(async ({ input, ctx }) => {
         const alunoId = input?.alunoId ?? ctx.user.id;
-        // --- FIX: Busca matriculas enriquecidas com lógica de JOIN ---
         const matriculasDoAluno = await MatriculasDB.getMatriculasByAluno(alunoId);
         
         const resultados: any[] = [];
@@ -400,7 +466,7 @@ export const appRouter = router({
         const contextoSistema =
           `Você é o Hi, assistente virtual do Hub Inteligente UFPE.
   Você PODE executar ferramentas (function calling) para consultar/atualizar o sistema acadêmico:
-  - Consultar/lçar notas e médias
+  - Consultar/lançar notas e médias
   - Registrar faltas
   - Projeções/simulações de média
   - Consultar horários e situação geral

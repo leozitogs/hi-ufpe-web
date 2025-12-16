@@ -113,7 +113,7 @@ export type ResponseFormat =
 const ensureArray = (
   value: MessageContent | MessageContent[] | null | undefined
 ): MessageContent[] => {
-  if (value == null) return []; // evita [null]
+  if (value == null) return [];
   return Array.isArray(value) ? value : [value];
 };
 
@@ -123,32 +123,19 @@ const normalizeContentPart = (
   if (typeof part === "string") {
     return { type: "text", text: part };
   }
-
-  if (part.type === "text") {
-    return part;
-  }
-
-  if (part.type === "image_url") {
-    return part;
-  }
-
-  if (part.type === "file_url") {
-    return part;
-  }
+  if (part.type === "text") return part;
+  if (part.type === "image_url") return part;
+  if (part.type === "file_url") return part;
 
   throw new Error("Unsupported message content part");
 };
 
-// Substitua toda a função normalizeMessage por esta:
 const normalizeMessage = (message: Message) => {
   const { role, name, tool_call_id } = message as any;
-  // 🔴 Preserve tool_calls (se existir) — é essencial para usar mensagens 'tool' depois
   const tool_calls = (message as any).tool_calls;
 
-  // Content pode ser string | array | null/undefined
   let contentArr = ensureArray((message as any).content);
 
-  // Mensagens de tool/function: sempre em string (o provider espera isso)
   if (role === "tool" || role === "function") {
     const content = contentArr
       .map((part) =>
@@ -156,34 +143,25 @@ const normalizeMessage = (message: Message) => {
       )
       .join("\n");
 
-    return {
-      role,
-      name,
-      tool_call_id,
-      content, // string ("" se vazio)
-    };
+    return { role, name, tool_call_id, content };
   }
 
-    // Para demais roles (assistant/user/system): normalizar partes
   const contentParts = contentArr
     .map(normalizeContentPart)
     .filter(Boolean) as any[];
 
-  // Se não sobrou parte válida, use string vazia (e mantenha tool_calls se houver)
   if (contentParts.length === 0) {
     return tool_calls
       ? { role, name, content: "", tool_calls }
       : { role, name, content: "" };
   }
 
-  // Caso seja um único texto, simplifique para string (compat com vários provedores)
   if (contentParts.length === 1 && contentParts[0].type === "text") {
     return tool_calls
       ? { role, name, content: contentParts[0].text, tool_calls }
       : { role, name, content: contentParts[0].text };
   }
 
-  // Caso contrário, devolva as partes e (se houver) tool_calls
   return tool_calls
     ? { role, name, content: contentParts, tool_calls }
     : { role, name, content: contentParts };
@@ -194,37 +172,17 @@ const normalizeToolChoice = (
   tools: Tool[] | undefined
 ): "none" | "auto" | ToolChoiceExplicit | undefined => {
   if (!toolChoice) return undefined;
-
-  if (toolChoice === "none" || toolChoice === "auto") {
-    return toolChoice;
-  }
-
+  if (toolChoice === "none" || toolChoice === "auto") return toolChoice;
+  
   if (toolChoice === "required") {
-    if (!tools || tools.length === 0) {
-      throw new Error(
-        "tool_choice 'required' was provided but no tools were configured"
-      );
-    }
-
-    if (tools.length > 1) {
-      throw new Error(
-        "tool_choice 'required' needs a single tool or specify the tool name explicitly"
-      );
-    }
-
-    return {
-      type: "function",
-      function: { name: tools[0].function.name },
-    };
+    if (!tools || tools.length === 0) throw new Error("tool_choice 'required' provided but no tools configured");
+    if (tools.length > 1) throw new Error("tool_choice 'required' needs a single tool");
+    return { type: "function", function: { name: tools[0].function.name } };
   }
 
   if ("name" in toolChoice) {
-    return {
-      type: "function",
-      function: { name: toolChoice.name },
-    };
+    return { type: "function", function: { name: toolChoice.name } };
   }
-
   return toolChoice;
 };
 
@@ -233,46 +191,17 @@ const resolveApiUrl = () =>
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 
-const assertApiKey = ( ) => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-};
-
-const normalizeResponseFormat = ({
-  responseFormat,
-  response_format,
-  outputSchema,
-  output_schema,
-}: {
-  responseFormat?: ResponseFormat;
-  response_format?: ResponseFormat;
-  outputSchema?: OutputSchema;
-  output_schema?: OutputSchema;
-}):
-  | { type: "json_schema"; json_schema: JsonSchema }
-  | { type: "text" }
-  | { type: "json_object" }
-  | undefined => {
+const normalizeResponseFormat = ({ responseFormat, response_format, outputSchema, output_schema }: any) => {
   const explicitFormat = responseFormat || response_format;
   if (explicitFormat) {
-    if (
-      explicitFormat.type === "json_schema" &&
-      !explicitFormat.json_schema?.schema
-    ) {
-      throw new Error(
-        "responseFormat json_schema requires a defined schema object"
-      );
+    if (explicitFormat.type === "json_schema" && !explicitFormat.json_schema?.schema) {
+      throw new Error("responseFormat json_schema requires a defined schema object");
     }
     return explicitFormat;
   }
-
   const schema = outputSchema || output_schema;
   if (!schema) return undefined;
-
-  if (!schema.name || !schema.schema) {
-    throw new Error("outputSchema requires both name and schema");
-  }
+  if (!schema.name || !schema.schema) throw new Error("outputSchema requires both name and schema");
 
   return {
     type: "json_schema",
@@ -284,8 +213,51 @@ const normalizeResponseFormat = ({
   };
 };
 
+// --- FUNÇÃO MOCK PARA MODO DEV ---
+function getMockResponse(messages: Message[]): InvokeResult {
+  const lastMessage = messages[messages.length - 1];
+  const content = Array.isArray(lastMessage.content) 
+    ? (lastMessage.content[0] as any).text 
+    : lastMessage.content;
+
+  console.warn(`[LLM Mock] Recebido: "${content}". Retornando resposta simulada.`);
+
+  return {
+    id: "mock-id",
+    created: Date.now(),
+    model: "mock-gpt-4o",
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content: "🤖 [Modo Mock] Olá! Estou em modo de teste e não estou conectado à OpenAI. Seus dados estão seguros e nenhum crédito foi gasto.",
+        },
+        finish_reason: "stop",
+      },
+    ],
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+  };
+}
+
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  
+  // === LÓGICA DE SEGURANÇA DO MOCK ===
+  // Ativa o Mock se:
+  // 1. Estamos explicitamente usando o usuário mock (definido no .env)
+  // 2. OU estamos em modo DEV e a chave não existe
+  const shouldUseMock = 
+    (process.env.USE_MOCK_USER === "true") || 
+    (ENV.devMode && !ENV.forgeApiKey);
+
+  if (shouldUseMock) {
+    return getMockResponse(params.messages);
+  }
+
+  // Validação de Segurança para Produção
+  if (!ENV.forgeApiKey) {
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
 
   const {
     messages,
@@ -307,15 +279,12 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tools = tools;
   }
 
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
+  const normalizedToolChoice = normalizeToolChoice(toolChoice || tool_choice, tools);
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 16384
+  payload.max_tokens = 16384;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,

@@ -1,25 +1,9 @@
-/**
- * Image generation helper using internal ImageService
- *
- * Example usage:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "A serene landscape with mountains"
- *   });
- *
- * For editing:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "Add a rainbow to this landscape",
- *     originalImages: [{
- *       url: "https://example.com/original.jpg",
- *       mimeType: "image/jpeg"
- *     }]
- *   });
- */
-import { storagePut } from "server/storage";
+import { storagePut } from "../storage"; 
 import { ENV } from "./env";
 
 export type GenerateImageOptions = {
   prompt: string;
+  userId?: string; 
   originalImages?: Array<{
     url?: string;
     b64Json?: string;
@@ -41,7 +25,8 @@ export async function generateImage(
     throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
   }
 
-  // Build the full URL by appending the service path to the base URL
+  const ownerId = options.userId || "system";
+
   const baseUrl = ENV.forgeApiUrl.endsWith("/")
     ? ENV.forgeApiUrl
     : `${ENV.forgeApiUrl}/`;
@@ -77,15 +62,22 @@ export async function generateImage(
       mimeType: string;
     };
   };
+  
   const base64Data = result.image.b64Json;
   const buffer = Buffer.from(base64Data, "base64");
 
-  // Save to S3
-  const { url } = await storagePut(
-    `generated/${Date.now()}.png`,
-    buffer,
-    result.image.mimeType
+  // Cria o Blob com o tipo correto
+  const blob = new Blob([buffer], { type: result.image.mimeType });
+  const filename = `generated/${Date.now()}.png`;
+
+  // [CORREÇÃO] Invertemos a ordem: (Blob, Nome, UserId)
+  // O erro indicava que o primeiro argumento esperava um Blob, mas recebia uma string.
+  const url = await storagePut(
+    blob,      // 1º: O arquivo
+    filename,  // 2º: O nome
+    ownerId    // 3º: O dono
   );
+
   return {
     url,
   };
