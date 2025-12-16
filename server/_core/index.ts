@@ -44,7 +44,7 @@ async function startServer() {
 
   // [CRÍTICO PARA RENDER] Diz ao Express que ele está atrás de um Proxy (Load Balancer)
   // Sem isso, cookies 'Secure' não funcionam.
-  app.set("trust proxy", 1);
+  app.set("trust proxy", true);
 
   app.use(cors({
     // Sua URL do Frontend (sem barra no final)
@@ -57,14 +57,15 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // [NOVO] Configuração de Sessão Segura
+  // [CORREÇÃO] Configuração Agressiva de Sessão para Render
   app.use(session({
     secret: process.env.JWT_SECRET || "segredo-super-secreto",
     resave: false,
     saveUninitialized: false,
+    proxy: true, // [IMPORTANTE] Força o express-session a confiar no Proxy do Render
     cookie: {
-      secure: process.env.NODE_ENV === "production", // True no Render (HTTPS), False local
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // 'none' permite Cross-Domain
+      secure: true, // [IMPORTANTE] Força HTTPS sempre (necessário para SameSite: None)
+      sameSite: 'none', // [IMPORTANTE] Permite cookie entre domínios diferentes
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
     }
