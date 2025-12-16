@@ -1,33 +1,29 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
-// Importe o plugin do React
-import react from '@vitejs/plugin-react';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  plugins: [react() as any], // <--- ADICIONE ISSO AQUI
-  root: path.resolve(import.meta.dirname),
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["./client/tests/setup.ts"],
-    include: [
-      "server/**/*.test.ts", 
-      "server/**/*.spec.ts",
-      "client/**/*.test.ts",
-      "client/**/*.test.tsx", // Garanta que .tsx está aqui
-      "client/**/*.spec.ts",
-      "client/**/*.spec.tsx"
-    ],
-    alias: {
-      "@": path.resolve(__dirname, "./client/src"),
-      "@server": path.resolve(__dirname, "./server"),
-      "@shared": path.resolve(__dirname, "./shared"),
-    }
+  // Removemos os plugins do Replit que causavam erro
+  plugins: [react()],
+  
+  // Define que a raiz do frontend é a pasta 'client'
+  root: "client",
+  
+  build: {
+    // Gera o build em client/dist
+    outDir: "dist",
+    emptyOutDir: true,
   },
+  
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./client/src"),
-      "@shared": path.resolve(__dirname, "./shared"),
+      // Ajusta os imports para apontar corretamente para dentro de client
+      "@": path.resolve(__dirname, "client", "src"),
+      "@shared": path.resolve(__dirname, "shared"),
     },
   },
 });
