@@ -11,12 +11,10 @@ export default function Login() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
-      // Força um refresh para carregar o contexto do usuário (auth.me)
-      // Isso é importante em login baseado em Cookies httpOnly
-      window.location.href = "/"; 
+      // [CORREÇÃO] Redirecionar para o Dashboard, não para a Home "/"
+      window.location.href = "/dashboard"; 
     },
     onError: (err) => {
-      // [FIX 3] O tipo de 'err' agora é inferido corretamente
       setError(err.message);
     }
   });
