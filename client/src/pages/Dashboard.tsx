@@ -231,12 +231,13 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* CORREÇÃO: Usamos onClick para navegação interna sem recarregar a página */}
             <Button 
-  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300"
-  onClick={() => setLocation("/app-auth")}
->
-  Fazer Login
-</Button>
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300"
+              onClick={() => setLocation("/app-auth")}
+            >
+              Fazer Login
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -11,6 +11,8 @@ import Horarios from "./pages/Horarios";
 import Notas from "./pages/Notas";
 import Comunicados from "./pages/Comunicados";
 import AdminPanel from "./pages/AdminPanel";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/chat" component={Chat} />
+      <Route path="/app-auth" component={Login} />
+      <Route path="/cadastro" component={Register} />
       <Route path="/horarios" component={Horarios} />
       <Route path="/notas" component={Notas} />
       <Route path="/comunicados" component={Comunicados} />
