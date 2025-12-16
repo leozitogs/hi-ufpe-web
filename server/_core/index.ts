@@ -19,15 +19,15 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   
-  // 1. Trust Proxy (Essencial para Cookies no Render)
+  // 1. Trust Proxy: Essencial para o Render passar os cookies corretamente
   app.set("trust proxy", 1); 
 
   const server = createServer(app);
 
-  // 2. CORS (Permite APENAS o seu Frontend externo)
+  // 2. CORS: Permite que o Frontend específico acesse e mande cookies
   app.use(cors({
-    origin: "https://hi-ufpe-web-1vms.onrender.com", // URL EXATA do Frontend (sem barra no final)
-    credentials: true, // Permite cookies
+    origin: "https://hi-ufpe-web-1vms.onrender.com", // SEU LINK DO FRONTEND (sem barra no final)
+    credentials: true, // Permite o envio de cookies/sessão
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
   }));
@@ -35,17 +35,17 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // 3. Sessão (Configurada para Cross-Site)
+  // 3. Sessão: Configurada para funcionar Cross-Site
   app.use(session({
     secret: process.env.JWT_SECRET || "segredo-super-secreto",
     resave: false,
     saveUninitialized: false,
-    proxy: true,
+    proxy: true, // Importante para SSL no Render
     cookie: {
       secure: true, // Força HTTPS
-      sameSite: 'none', // Permite cookie entre domínios diferentes
+      sameSite: 'none', // Permite cookie entre front e back diferentes
       httpOnly: true,
-      partitioned: true, // CRÍTICO: Permite login em abas novas do Chrome
+      partitioned: true, // [CRÍTICO] Permite login em navegadores modernos (Chrome)
       maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
     }
   }));
@@ -60,9 +60,9 @@ async function startServer() {
     })
   );
 
-  // Removida toda a lógica de servir "client/dist". O Backend agora é só API.
+  // Rota simples para verificar se o back está de pé
   app.get("/", (req, res) => {
-    res.send("Backend is running (API Only). Access via Frontend.");
+    res.send("Backend API is running. Access via Frontend.");
   });
 
   const port = parseInt(process.env.PORT || "3000");
