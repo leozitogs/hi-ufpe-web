@@ -8,9 +8,11 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
+  // 1. Onde está o código fonte? Na pasta client
   root: "client", 
   build: {
-    // [CORREÇÃO] Força o build a ser salvo EXATAMENTE em client/dist
+    // 2. Onde salvar o site pronto? Forçamos ser em client/dist
+    // O path.resolve garante que ele não jogue na raiz por engano
     outDir: path.resolve(__dirname, "client/dist"),
     emptyOutDir: true,
   },

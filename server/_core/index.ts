@@ -39,32 +39,39 @@ async function startServer() {
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    // [CORREÇÃO] Aponta exatamente para onde configuramos o vite.config.ts
-    // Como estamos rodando de 'dist/index.js' (backend), precisamos subir um nível e entrar em client/dist
-    // OU usar o caminho absoluto baseado na raiz do projeto.
+    // === CONFIGURAÇÃO CORRIGIDA DE PRODUÇÃO ===
     
-    // Tentativa 1: Caminho relativo padrão do Render
-    const possiblePaths = [
-      path.resolve(process.cwd(), "client/dist"), // Caminho mais provável no Render
-      path.resolve(__dirname, "../../client/dist") // Caminho relativo local
-    ];
+    // Caminho absoluto para a pasta client/dist baseado na raiz do projeto.
+    // No Render, process.cwd() retorna a raiz do repositório (/opt/render/project/src),
+    // então montamos o caminho direto para a pasta do frontend.
+    const clientDist = path.join(process.cwd(), "client/dist");
 
-    let clientDist = null;
-    for (const p of possiblePaths) {
-      if (fs.existsSync(path.join(p, "index.html"))) {
-        clientDist = p;
-        break;
-      }
-    }
+    console.log("🔍 Verificando pasta do frontend:", clientDist);
 
-    if (clientDist) {
-      console.log("✅ Frontend servido de:", clientDist);
+    // Verifica se o index.html existe lá dentro
+    if (fs.existsSync(path.join(clientDist, "index.html"))) {
+      console.log("✅ Frontend encontrado! Servindo arquivos...");
+      
+      // Serve arquivos estáticos (JS, CSS, Imagens)
       app.use(express.static(clientDist));
-      app.get("*", (_req, res) => res.sendFile(path.join(clientDist!, "index.html")));
+      
+      // Qualquer outra rota (que não seja API) vai para o index.html (SPA)
+      app.get("*", (_req, res) => {
+        res.sendFile(path.join(clientDist, "index.html"));
+      });
     } else {
-      console.error("❌ Erro: Pasta client/dist não encontrada após build corrigido.");
-      console.log("Procurado em:", possiblePaths);
-      app.get("/", (req, res) => res.send("Frontend building... Please wait for next deploy if this persists."));
+      console.error(`❌ Erro: O arquivo index.html não foi encontrado em: ${clientDist}`);
+      console.error("Verifique se o build do Vite foi configurado para 'client/dist'.");
+      
+      // Fallback com mensagem de erro clara
+      app.get("/", (req, res) => res.status(500).send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 2rem;">
+          <h1>Erro no Backend</h1>
+          <p>O servidor iniciou, mas não encontrou a pasta do site em:</p>
+          <code style="background: #eee; padding: 5px; border-radius: 4px;">${clientDist}</code>
+          <p>Verifique os logs do Render para ver onde o 'vite build' salvou os arquivos.</p>
+        </div>
+      `));
     }
   }
 
