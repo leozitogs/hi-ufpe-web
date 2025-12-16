@@ -8,14 +8,16 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
-  // 1. Onde está o código fonte? Na pasta client
-  root: "client", 
+  // 1. Define que os arquivos do site estão na pasta 'client'
+  root: "client",
+  
   build: {
-    // 2. Onde salvar o site pronto? Forçamos ser em client/dist
-    // O path.resolve garante que ele não jogue na raiz por engano
+    // 2. FORÇA o Vite a salvar o site pronto em 'client/dist' (Caminho Absoluto)
+    // Isso casa perfeitamente com o que configuramos no backend
     outDir: path.resolve(__dirname, "client/dist"),
     emptyOutDir: true,
   },
+  
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client", "src"),
