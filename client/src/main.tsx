@@ -40,13 +40,13 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: `${import.meta.env.VITE_API_URL || ""}/api/trpc`,
+      url: "https://hi-ufpe.onrender.com/api/trpc",
       
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: "include", // Importante para enviar os Cookies de sessão
+          credentials: "include",
         });
       },
     }),
