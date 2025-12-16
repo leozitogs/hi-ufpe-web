@@ -37,15 +37,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
-  
-  // [IMPORTANTE] Trust Proxy para cookies seguros no Render
   app.set("trust proxy", 1); 
 
   const server = createServer(app);
 
-  // [IMPORTANTE] CORS simplificado para evitar conflitos
   app.use(cors({
-    origin: true, // Aceita a origem que vier (já que agora é o mesmo domínio)
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
@@ -54,18 +51,17 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Configuração de Sessão
   app.use(session({
     secret: process.env.JWT_SECRET || "segredo-super-secreto",
     resave: false,
     saveUninitialized: false,
     proxy: true,
     cookie: {
-      secure: true, // Força HTTPS
+      secure: true, 
       sameSite: 'none', 
       httpOnly: true,
       partitioned: true,
-      maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
+      maxAge: 1000 * 60 * 60 * 24 * 30 
     }
   }));
   
@@ -82,48 +78,51 @@ async function startServer() {
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    // === LÓGICA DE DETECÇÃO DO FRONTEND (ROBUSTA) ===
+    // === MODO DETETIVE: LISTAR ARQUIVOS PARA ACHAR O FRONTEND ===
+    console.log("\n🕵️ --- INICIANDO INSPEÇÃO DE ARQUIVOS ---");
+    const root = process.cwd();
+    console.log("📂 Raiz do projeto (CWD):", root);
     
-    // Lista de lugares onde o 'client/dist' pode estar escondido
-    const possiblePaths = [
-      path.resolve(__dirname, "../../client/dist"),       // Estrutura padrão local / source
-      path.resolve(process.cwd(), "../client/dist"),      // Estrutura comum no Render (se rodar de 'server')
-      path.resolve(process.cwd(), "client/dist"),         // Se rodar da raiz
-      path.join(__dirname, "../../../client/dist")        // Se o build gerar server/dist/_core
-    ];
-    
-    let clientDist = null;
-    
-    // Procura em cada caminho até achar o index.html
-    for (const p of possiblePaths) {
-      if (fs.existsSync(path.join(p, "index.html"))) {
-        clientDist = p;
-        break;
+    try {
+      // 1. O que tem na raiz?
+      const rootFiles = fs.readdirSync(root);
+      console.log("📄 Arquivos na Raiz:", rootFiles);
+
+      // 2. A pasta 'client' existe?
+      if (rootFiles.includes("client")) {
+        const clientPath = path.join(root, "client");
+        const clientFiles = fs.readdirSync(clientPath);
+        console.log("📂 Conteúdo de /client:", clientFiles);
+
+        // 3. A pasta 'dist' existe dentro de 'client'?
+        if (clientFiles.includes("dist")) {
+           console.log("✅ Pasta /client/dist encontrada!");
+           const distPath = path.join(clientPath, "dist");
+           const distFiles = fs.readdirSync(distPath);
+           console.log("📄 Conteúdo de /client/dist:", distFiles);
+
+           if (distFiles.includes("index.html")) {
+             console.log("🎉 index.html ENCONTRADO! Servindo frontend...");
+             app.use(express.static(distPath));
+             app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+           } else {
+             console.log("❌ index.html NÃO está na pasta dist.");
+             app.get("/", (req, res) => res.send("Pasta dist encontrada, mas index.html sumiu."));
+           }
+        } else {
+           console.log("❌ Pasta 'dist' NÃO encontrada dentro de /client.");
+           console.log("Verifique se o build gerou uma pasta com outro nome (ex: build, out).");
+           app.get("/", (req, res) => res.send("Frontend build folder (dist) not found inside client. Check logs."));
+        }
+      } else {
+         console.log("❌ Pasta 'client' NÃO encontrada na raiz.");
+         app.get("/", (req, res) => res.send("Client folder not found in root."));
       }
+    } catch (e) {
+      console.error("💥 Erro fatal ao listar arquivos:", e);
+      app.get("/", (req, res) => res.send("Erro ao listar arquivos do servidor."));
     }
-    
-    // Logs para ajudar a gente a entender o que está acontecendo
-    console.log("--- DIAGNÓSTICO DE DEPLOY ---");
-    console.log("Diretório atual (CWD):", process.cwd());
-    console.log("Diretório do arquivo (__dirname):", __dirname);
-    
-    if (clientDist) {
-      console.log("✅ Frontend encontrado em:", clientDist);
-      
-      // Serve os arquivos estáticos (CSS, JS, Imagens)
-      app.use(express.static(clientDist));
-      
-      // Qualquer rota que não seja API, manda para o index.html (SPA)
-      app.get("*", (_req, res) => {
-        res.sendFile(path.join(clientDist!, "index.html"));
-      });
-      
-    } else {
-      console.error("❌ ERRO CRÍTICO: Não foi possível encontrar a pasta 'client/dist' em nenhum dos caminhos tentados.");
-      console.error("Caminhos testados:", possiblePaths);
-      // Fallback simples para não ficar tela branca
-      app.get("/", (req, res) => res.send("Backend is running, but Frontend build was not found. Check logs."));
-    }
+    console.log("🕵️ --- FIM DA INSPEÇÃO ---\n");
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
