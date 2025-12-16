@@ -17,10 +17,9 @@ import { useLocation } from "wouter";
 import { useEffect } from "react";
 
 /**
- * Home.tsx — versão com Features interativas (sem botão "Abrir")
- * - Cards mostram título + descrição por padrão
- * - Ao hover / focus: card eleva, ícone ganha destaque e aparece uma info extra (exemplo)
- * - A ação "Abrir" foi removida, mantendo o componente meramente informativo
+ * Home.tsx — Versão ajustada para "Blefe" de Autenticação
+ * - Todos os botões de ação ("Entrar", "Começar", etc) agora levam para "/app-auth" (Login)
+ * - Isso força o fluxo: Home -> Login -> Dashboard
  */
 
 export default function Home() {
@@ -110,8 +109,8 @@ export default function Home() {
           <nav className="flex items-center gap-3">
             <button
               className="relative overflow-hidden bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              onClick={() => setLocation("/dashboard")}
-              aria-label="Entrar no dashboard"
+              onClick={() => setLocation("/app-auth")} // [MODIFICADO]: Vai para Login
+              aria-label="Entrar no sistema"
             >
               Entrar
             </button>
@@ -144,7 +143,7 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button
-                onClick={() => setLocation("/dashboard")}
+                onClick={() => setLocation("/app-auth")} // [MODIFICADO]: Vai para Login
                 className="group relative inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gradient-to-r from-blue-700 to-blue-500 text-white font-semibold shadow-lg transform-gpu hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 aria-label="Começar agora no Hi UFPE"
               >
@@ -199,7 +198,7 @@ export default function Home() {
         </section>
 
         {/* ============================
-              FEATURES — INTERACTIVE (NO BUTTON)
+             FEATURES — INTERACTIVE (NO BUTTON)
            ============================ */}
         <section id="features" className="mt-12 animate-appear-up">
           <div className="text-center mb-8 space-y-3">
@@ -268,7 +267,7 @@ export default function Home() {
 
             <div className="mt-6">
               <button
-                onClick={() => setLocation("/dashboard")}
+                onClick={() => setLocation("/app-auth")} // [MODIFICADO]: Vai para Login
                 className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-md hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 Experimentar Agora
@@ -304,7 +303,7 @@ export default function Home() {
               <p className="text-lg mt-2 opacity-90">Comece a usar o Hi UFPE e descubra uma nova forma de gerenciar sua vida acadêmica</p>
               <div className="mt-6">
                 <button
-                  onClick={() => setLocation("/dashboard")}
+                  onClick={() => setLocation("/app-auth")} // [MODIFICADO]: Vai para Login
                   className="px-6 py-3 rounded-lg bg-white text-blue-700 font-semibold hover:bg-slate-100 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-white/40"
                 >
                   Começar Gratuitamente <ArrowRight className="w-4 h-4 ml-2 inline-block" />
@@ -325,7 +324,7 @@ export default function Home() {
                   <span className="text-white font-bold">Hi</span>
                 </div>
                 <span className="font-semibold text-blue-800">UFPE</span>
-            </div>
+              </div>
               <p className="text-sm text-blue-600">Hub Inteligente para estudantes da UFPE</p>
             </div>
 
@@ -378,6 +377,7 @@ export default function Home() {
         .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
           animation: none !important;
           transition: none !important;
+          isibility: visible !important;
         }
 
         /* Blob animations */

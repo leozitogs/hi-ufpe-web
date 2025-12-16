@@ -139,11 +139,11 @@ export default function Dashboard() {
 
   const { data: comunicados, isLoading: loadingComunicados } = trpc.comunicados.list.useQuery();
   const { data: matriculas, isLoading: loadingMatriculas } = trpc.matriculas.list.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: true,
   });
   const { data: horarios, isLoading: loadingHorarios } = trpc.horarios.listByAluno.useQuery(
     { alunoId: user?.id || "", periodo: user?.periodo || "2025.1" },
-    { enabled: isAuthenticated }
+    { enabled: true }
   );
 
   const disciplinasCount = useAnimatedNumber(matriculas?.length || 0, 900);
@@ -219,30 +219,6 @@ export default function Dashboard() {
     el.style.transform = '';
     el.style.transition = 'transform 400ms cubic-bezier(.2,.9,.2,1)';
   }, []);
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-yellow-50">
-        <Card className="w-full max-w-md shadow-2xl border border-white/40 bg-white/80 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-bold text-blue-700">Acesso Restrito</CardTitle>
-            <CardDescription className="text-center text-blue-600">
-              Faça login para acessar o dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* CORREÇÃO: Usamos onClick para navegação interna sem recarregar a página */}
-            <Button 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300"
-              onClick={() => setLocation("/app-auth")}
-            >
-              Fazer Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (loadingMatriculas || loadingHorarios || loadingComunicados) {
     return (
