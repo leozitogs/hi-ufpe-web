@@ -18,62 +18,52 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  
+  // 1. Trust Proxy (Essencial para Cookies no Render)
   app.set("trust proxy", 1); 
+
   const server = createServer(app);
 
-  app.use(cors({ origin: true, credentials: true }));
+  // 2. CORS (Permite APENAS o seu Frontend externo)
+  app.use(cors({
+    origin: "https://hi-ufpe-web-1vms.onrender.com", // URL EXATA do Frontend (sem barra no final)
+    credentials: true, // Permite cookies
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
+  }));
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // 3. Sessão (Configurada para Cross-Site)
   app.use(session({
-    secret: process.env.JWT_SECRET || "segredo",
+    secret: process.env.JWT_SECRET || "segredo-super-secreto",
     resave: false,
     saveUninitialized: false,
     proxy: true,
-    cookie: { secure: true, sameSite: 'none', httpOnly: true, partitioned: true, maxAge: 2592000000 }
+    cookie: {
+      secure: true, // Força HTTPS
+      sameSite: 'none', // Permite cookie entre domínios diferentes
+      httpOnly: true,
+      partitioned: true, // CRÍTICO: Permite login em abas novas do Chrome
+      maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
+    }
   }));
   
   registerOAuthRoutes(app);
-  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
+  
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    })
+  );
 
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    // === CONFIGURAÇÃO CORRIGIDA DE PRODUÇÃO ===
-    
-    // Caminho absoluto para a pasta client/dist baseado na raiz do projeto.
-    // No Render, process.cwd() retorna a raiz do repositório (/opt/render/project/src),
-    // então montamos o caminho direto para a pasta do frontend.
-    const clientDist = path.join(process.cwd(), "client/dist");
-
-    console.log("🔍 Verificando pasta do frontend:", clientDist);
-
-    // Verifica se o index.html existe lá dentro
-    if (fs.existsSync(path.join(clientDist, "index.html"))) {
-      console.log("✅ Frontend encontrado! Servindo arquivos...");
-      
-      // Serve arquivos estáticos (JS, CSS, Imagens)
-      app.use(express.static(clientDist));
-      
-      // Qualquer outra rota (que não seja API) vai para o index.html (SPA)
-      app.get("*", (_req, res) => {
-        res.sendFile(path.join(clientDist, "index.html"));
-      });
-    } else {
-      console.error(`❌ Erro: O arquivo index.html não foi encontrado em: ${clientDist}`);
-      console.error("Verifique se o build do Vite foi configurado para 'client/dist'.");
-      
-      // Fallback com mensagem de erro clara
-      app.get("/", (req, res) => res.status(500).send(`
-        <div style="font-family: sans-serif; text-align: center; padding: 2rem;">
-          <h1>Erro no Backend</h1>
-          <p>O servidor iniciou, mas não encontrou a pasta do site em:</p>
-          <code style="background: #eee; padding: 5px; border-radius: 4px;">${clientDist}</code>
-          <p>Verifique os logs do Render para ver onde o 'vite build' salvou os arquivos.</p>
-        </div>
-      `));
-    }
-  }
+  // Removida toda a lógica de servir "client/dist". O Backend agora é só API.
+  app.get("/", (req, res) => {
+    res.send("Backend is running (API Only). Access via Frontend.");
+  });
 
   const port = parseInt(process.env.PORT || "3000");
   server.listen(port, "0.0.0.0", () => {

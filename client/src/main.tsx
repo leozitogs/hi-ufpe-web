@@ -40,15 +40,14 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      // [CORREÇÃO FINAL] Usar caminho relativo.
-      // Funciona automaticamente quando Front e Back estão no mesmo domínio.
-      url: "/api/trpc", 
+// URL COMPLETA do Backend
+      url: "https://hi-ufpe.onrender.com/api/trpc", 
       
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
-          credentials: "include",
+          credentials: "include", // Importante para enviar o cookie
         });
       },
     }),
