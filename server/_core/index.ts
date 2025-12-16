@@ -40,6 +40,7 @@ async function startServer() {
 
   // [NOVO] Configuração do CORS - Crítico para deploy separado
   // Isso permite que o seu Frontend converse com o Backend
+  /*/ descomentar quando terminar debug
   app.use(cors({
     origin: [
       "http://localhost:5173",                      // Seu ambiente local
@@ -49,6 +50,12 @@ async function startServer() {
     credentials: true, // Permite envio de Cookies/Sessão entre domínios
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
+  }));
+  /*/
+
+  app.use(cors({
+  origin: true, 
+  credentials: true,
   }));
 
   app.use(express.json({ limit: "50mb" }));
