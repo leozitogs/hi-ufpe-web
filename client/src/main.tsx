@@ -18,9 +18,9 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  // [BLEFE ATIVADO] Comentamos o redirecionamento para não ser expulso
-  // window.location.href = getLoginUrl(); 
-  console.log("Ignorando erro 401 para manter o acesso visual.");
+  // [CORREÇÃO FINAL] Agora que usamos Tokens, a autenticação é robusta.
+  // Se der erro 401, o token é inválido/expirou. Devemos redirecionar de verdade.
+  window.location.href = getLoginUrl(); 
 };
 
 queryClient.getQueryCache().subscribe(event => {
@@ -42,20 +42,21 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "https://hi-ufpe.onrender.com/api/trpc", // URL Absoluta (MANTENHA)
+      // URL Absoluta (MANTENHA para Cross-Site)
+      url: "https://hi-ufpe.onrender.com/api/trpc", 
       
       transformer: superjson,
 
-      // [MUDANÇA AQUI] Configurar os headers dinamicamente
+      // [CRÍTICO] Injeta o Token salvo no LocalStorage no cabeçalho
       headers() {
         const token = localStorage.getItem("auth_token");
         return {
-          // Se tiver token, manda no padrão Bearer. Se não, manda objeto vazio.
+          // Se existir token, envia como Bearer. Se não, envia vazio.
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
       },
 
-      // Pode manter o credentials include se quiser, mas o Header é quem vai salvar o dia
+      // Mantemos credentials: "include" por compatibilidade, mas o header acima é quem manda.
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
