@@ -18,7 +18,9 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // [BLEFE ATIVADO] Comentamos o redirecionamento para não ser expulso
+  // window.location.href = getLoginUrl(); 
+  console.log("Ignorando erro 401 para manter o acesso visual.");
 };
 
 queryClient.getQueryCache().subscribe(event => {
