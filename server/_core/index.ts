@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import session from "express-session"; // [NOVO] Importar sessão
+import session from "express-session";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -16,9 +16,6 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ... (Funções isPortAvailable e findAvailablePort permanecem iguais) ...
-
-// Adicionei as funções aqui para manter o contexto, se precisar copie do seu arquivo original
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
@@ -40,14 +37,15 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+  
+  // [IMPORTANTE] Trust Proxy para cookies seguros no Render
+  app.set("trust proxy", 1); 
+
   const server = createServer(app);
 
-  // [CRÍTICO PARA RENDER] Diz ao Express que ele está atrás de um Proxy (Load Balancer)
-  // Sem isso, cookies 'Secure' não funcionam.
-  app.set("trust proxy", 1);
-
+  // [IMPORTANTE] CORS simplificado para evitar conflitos
   app.use(cors({
-    origin: "https://hi-ufpe-web-1vms.onrender.com", // String única, sem array
+    origin: true, // Aceita a origem que vier (já que agora é o mesmo domínio)
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
@@ -56,15 +54,15 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // [CORREÇÃO] Configuração Agressiva de Sessão para Render
+  // Configuração de Sessão
   app.use(session({
     secret: process.env.JWT_SECRET || "segredo-super-secreto",
     resave: false,
     saveUninitialized: false,
-    proxy: true, // [IMPORTANTE] Força o express-session a confiar no Proxy do Render
+    proxy: true,
     cookie: {
-      secure: true, // [IMPORTANTE] Força HTTPS sempre (necessário para SameSite: None)
-      sameSite: 'none', // [IMPORTANTE] Permite cookie entre domínios diferentes
+      secure: true, // Força HTTPS
+      sameSite: 'none', 
       httpOnly: true,
       partitioned: true,
       maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
@@ -81,22 +79,50 @@ async function startServer() {
     })
   );
 
-  // ... (Resto do código setupVite e serveStatic permanece igual) ...
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    const clientDist = path.resolve(__dirname, "../../client/dist");
-    const hasClientBuild = fs.existsSync(clientDist);
-    const SERVE_CLIENT = process.env.SERVE_CLIENT === "true";
-
-    if (SERVE_CLIENT || hasClientBuild) {
-      console.log("Servindo client build de:", clientDist);
+    // === LÓGICA DE DETECÇÃO DO FRONTEND (ROBUSTA) ===
+    
+    // Lista de lugares onde o 'client/dist' pode estar escondido
+    const possiblePaths = [
+      path.resolve(__dirname, "../../client/dist"),       // Estrutura padrão local / source
+      path.resolve(process.cwd(), "../client/dist"),      // Estrutura comum no Render (se rodar de 'server')
+      path.resolve(process.cwd(), "client/dist"),         // Se rodar da raiz
+      path.join(__dirname, "../../../client/dist")        // Se o build gerar server/dist/_core
+    ];
+    
+    let clientDist = null;
+    
+    // Procura em cada caminho até achar o index.html
+    for (const p of possiblePaths) {
+      if (fs.existsSync(path.join(p, "index.html"))) {
+        clientDist = p;
+        break;
+      }
+    }
+    
+    // Logs para ajudar a gente a entender o que está acontecendo
+    console.log("--- DIAGNÓSTICO DE DEPLOY ---");
+    console.log("Diretório atual (CWD):", process.cwd());
+    console.log("Diretório do arquivo (__dirname):", __dirname);
+    
+    if (clientDist) {
+      console.log("✅ Frontend encontrado em:", clientDist);
+      
+      // Serve os arquivos estáticos (CSS, JS, Imagens)
       app.use(express.static(clientDist));
-      app.get("*", (_req, res, next) => {
-        const indexFile = path.join(clientDist, "index.html");
-        if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
-        return next();
+      
+      // Qualquer rota que não seja API, manda para o index.html (SPA)
+      app.get("*", (_req, res) => {
+        res.sendFile(path.join(clientDist!, "index.html"));
       });
+      
+    } else {
+      console.error("❌ ERRO CRÍTICO: Não foi possível encontrar a pasta 'client/dist' em nenhum dos caminhos tentados.");
+      console.error("Caminhos testados:", possiblePaths);
+      // Fallback simples para não ficar tela branca
+      app.get("/", (req, res) => res.send("Backend is running, but Frontend build was not found. Check logs."));
     }
   }
 
