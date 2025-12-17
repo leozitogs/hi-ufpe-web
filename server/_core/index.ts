@@ -25,9 +25,14 @@ async function startServer() {
   const server = createServer(app);
 
   // 2. CORS: Permite que o Frontend específico acesse e mande cookies
+  // 2. CORS ATUALIZADO: Aceita tanto Localhost quanto Produção
   app.use(cors({
-    origin: "https://hi-ufpe-web-1vms.onrender.com", // SEU LINK DO FRONTEND (sem barra no final)
-    credentials: true, // Permite o envio de cookies/sessão
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "https://hi-ufpe-web-1vms.onrender.com"
+    ],
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-trpc-source"]
   }));
@@ -42,10 +47,10 @@ async function startServer() {
     saveUninitialized: false,
     proxy: true, // Importante para SSL no Render
     cookie: {
-      secure: true, // Força HTTPS
-      sameSite: 'none', // Permite cookie entre front e back diferentes
+      secure: process.env.NODE_ENV === "production", // Só exige HTTPS se estiver na nuvem
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Relaxa a segurança localmente
       httpOnly: true,
-      partitioned: true, // [CRÍTICO] Permite login em navegadores modernos (Chrome)
+      partitioned: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
     }
   }));
